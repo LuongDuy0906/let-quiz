@@ -14,13 +14,13 @@ import { JwtStrategy } from './modules/auth/strategies/jwt.strategy';
       envFilePath: '.env',
       isGlobal: true
     }),
-    /*MongooseModule.forRootAsync({
+    MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URL'),
+        uri: configService.get<string>('MONGODB_URI'),
       }),
-    }),*/
+    }),
     AuthModule,
   ],
   controllers: [AppController],
