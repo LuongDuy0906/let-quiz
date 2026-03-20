@@ -33,7 +33,7 @@ export class UserService {
   async findOne(username: string) {
     return await this.userModel.findOne({
       username: username
-    }).select('username password -_id').exec();
+    }).select('username password role').exec();
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
