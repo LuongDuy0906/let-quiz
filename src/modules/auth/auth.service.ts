@@ -2,15 +2,15 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { LoginDTO } from './dto/login.dto';
 import { compare } from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { AuthJwtPayload } from './types/jwt-payload';
 import { CreateUserDto } from '../user/dto/create-user.dto';
+import { TokenService } from './token.service';
+import { AuthJwtPayload } from './types/jwt-payload';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
-    private readonly jwtService: JwtService
+    private readonly tokenService: TokenService
   ){}
 
   async login(input: LoginDTO) {
@@ -26,8 +26,7 @@ export class AuthService {
       throw new ConflictException("Mật khẩu không chính xác")
     }
 
-    const payload: AuthJwtPayload = {sub: String(existUser._id), username: existUser.username, role: existUser.role}
-    const token = await this.jwtService.signAsync(payload)
+    const token = await this.tokenService.signToken(existUser);
     return {
       username: existUser.username,
       access_token: token
@@ -37,13 +36,20 @@ export class AuthService {
   async register(input: CreateUserDto){
     const newUser = await this.userService.create(input);
 
-    const payload: AuthJwtPayload = {sub: String(newUser._id), username: newUser.username, role: newUser.role};
-
-    const token = await this.jwtService.signAsync(payload);
+    const token = await this.tokenService.signToken(newUser);
 
     return {
       username: newUser.username,
       access_token: token
-    };;
+    };
+  }
+
+  async refreshToken(input: AuthJwtPayload){
+    const newAccessToken = await this.tokenService.refreshToken(input);
+
+    return {
+      username: input.username,
+      new_access_token: newAccessToken
+    }
   }
 }

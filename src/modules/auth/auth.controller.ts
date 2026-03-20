@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -15,5 +17,12 @@ export class AuthController {
   @Post('register')
   register(@Body() body: CreateUserDto){
     return this.authService.register(body);
+  }
+
+  @Post('refresh-token')
+  @ApiBearerAuth()
+  @UseGuards(RefreshAuthGuard)
+  refreshToken(@Req() req){
+    return this.authService.refreshToken(req.user);
   }
 }
