@@ -4,6 +4,8 @@ import { LoginDTO } from './dto/login.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { ChangePasswordDTO } from '../user/dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,5 +26,21 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard)
   refreshToken(@Req() req){
     return this.authService.refreshToken(req.user);
+  }
+
+  @Patch(':id/change-password')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  changePassword(@Param('id') id: string, @Body() body: ChangePasswordDTO){
+    return this.authService.changePassword(id, body);
+  }
+
+  @Get('/logout')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  logout(@Req() req){
+    const userId = req.user.userId;
+    
+    return this.authService.logout(userId);;
   }
 }

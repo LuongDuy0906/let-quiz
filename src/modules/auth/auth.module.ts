@@ -9,13 +9,21 @@ import { UserModule } from '../user/user.module';
 import { TokenService } from './token.service';
 import refreshTokenConfig from 'src/config/refresh-token.config';
 import { RefreshJwtStrategy } from './strategies/refresh.strategy';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from '../user/entities/user.entity';
 
 @Module({
   imports: [
     UserModule,
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
-    ConfigModule.forFeature(refreshTokenConfig)
+    ConfigModule.forFeature(refreshTokenConfig),
+    MongooseModule.forFeature([
+      {
+        name: User.name,
+        schema: UserSchema
+      }
+    ])
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TokenService, RefreshJwtStrategy],

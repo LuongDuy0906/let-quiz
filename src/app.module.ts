@@ -5,7 +5,6 @@ import { UserModule } from './modules/user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './modules/auth/auth.module';
-import { JwtStrategy } from './modules/auth/strategies/jwt.strategy';
 
 @Module({
   imports: [
