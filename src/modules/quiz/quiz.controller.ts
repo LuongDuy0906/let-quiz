@@ -18,6 +18,7 @@ export class QuizController {
   }
 
   @Get()
+  @ApiOperation({summary: "API lấy danh sách các bộ đề"})
   findAll() {
     return this.quizService.findAll();
   }

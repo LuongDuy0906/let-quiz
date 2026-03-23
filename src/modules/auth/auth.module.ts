@@ -11,6 +11,8 @@ import refreshTokenConfig from 'src/config/refresh-token.config';
 import { RefreshJwtStrategy } from './strategies/refresh.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../user/entities/user.entity';
+import googleOauthConfig from 'src/config/google-oauth.config';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -18,6 +20,7 @@ import { User, UserSchema } from '../user/entities/user.entity';
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshTokenConfig),
+    ConfigModule.forFeature(googleOauthConfig),
     MongooseModule.forFeature([
       {
         name: User.name,
@@ -26,6 +29,6 @@ import { User, UserSchema } from '../user/entities/user.entity';
     ])
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TokenService, RefreshJwtStrategy],
+  providers: [AuthService, JwtStrategy, TokenService, RefreshJwtStrategy, GoogleStrategy],
 })
 export class AuthModule {}

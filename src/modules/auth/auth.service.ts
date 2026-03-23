@@ -3,7 +3,6 @@ import { UserService } from '../user/user.service';
 import { LoginDTO } from './dto/login.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { TokenService } from './token.service';
-import { AuthJwtPayload } from './types/jwt-payload';
 import { ChangePasswordDTO } from '../user/dto/change-password.dto';
 import * as bcrypt from 'bcrypt'
 import { RequestPayload } from './types/request-payload';
@@ -83,5 +82,12 @@ export class AuthService {
 
   async logout(id: string){
     return await this.tokenService.updateRefreshToken(id, null);
+  }
+
+  async validateGoogleUser(googleUser: CreateUserDto){
+    const existUser = await this.userService.findOne(googleUser.email);
+
+    if(existUser) return existUser;
+    return await this.userService.create(googleUser);
   }
 }

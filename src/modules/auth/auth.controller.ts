@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -6,6 +6,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { ChangePasswordDTO } from '../user/dto/change-password.dto';
+import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -42,5 +43,16 @@ export class AuthController {
     const userId = req.user.userId;
     
     return this.authService.logout(userId);;
+  }
+
+  @Get('google/login')
+  @UseGuards(GoogleAuthGuard)
+  googleLogin(){}
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  googleCallback(@Req() req, @Res() res){
+    const response = this.authService.login(req.user);
+    res.redirect("http://localhost:5173")
   }
 }

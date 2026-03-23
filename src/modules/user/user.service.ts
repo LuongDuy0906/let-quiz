@@ -47,7 +47,7 @@ export class UserService {
   }
 
   async findById(id: string){
-    return await this.userModel.findById(id).select('email password profile role refreshToken').exec();
+    return await this.userModel.findById(id).populate('myQuizzes', "title status question").select('profile').exec();
   }
 
   async updateProfile(id: string, updateProfileDto: UpdateProfileDTO) {

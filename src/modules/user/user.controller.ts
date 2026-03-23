@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -20,6 +22,13 @@ export class UserController {
   @Get('search')
   findOne(@Query('email') email: string) {
     return this.userService.findOne(email);
+  }
+
+  @Get('/library')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  findLibrary(@Req() req){
+    return this.userService.findById(req.user.userId)
   }
 
   @Patch(':id/profile')

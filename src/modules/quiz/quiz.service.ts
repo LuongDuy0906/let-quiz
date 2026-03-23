@@ -3,7 +3,8 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Quiz, QuizDocument } from './entities/quiz.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import { QuizStatus } from 'src/enum/quizStatus';
 
 @Injectable()
 export class QuizService {
@@ -14,13 +15,13 @@ export class QuizService {
 
   async create(userId: string, createQuizDto: CreateQuizDto) {
     return await this.quizModel.create({
-      authorId: userId,
+      authorId: new Types.ObjectId(userId),
       ...createQuizDto
     });
   }
 
-  findAll() {
-    return `This action returns all quiz`;
+  async findAll() {
+    return await this.quizModel.find({status: {$ne: QuizStatus.PRIVATE}}).select('authorId image title question');
   }
 
   findOne(id: number) {

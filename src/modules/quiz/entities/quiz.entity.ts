@@ -9,7 +9,7 @@ export type QuizDocument = HydratedDocument<Quiz>;
 export class Quiz {
     _id: ObjectId;
 
-    @Prop({type: Types.ObjectId, ref: 'User', required: true})
+    @Prop({type: Types.ObjectId, ref: 'User', required: true, index: true})
     authorId: Types.ObjectId;
 
     @Prop({required: true})

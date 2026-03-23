@@ -2,10 +2,17 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, ObjectId } from "mongoose";
 import { UserRole } from "src/enum/userRole";
 import { Profile } from "./profile.entity";
+import { Quiz } from "src/modules/quiz/entities/quiz.entity";
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema({timestamps: true})
+@Schema(
+    {
+        timestamps: true,
+        toJSON: {virtuals: true},
+        toObject: {virtuals: true}
+    }
+)
 export class User {
     _id: ObjectId;
 
@@ -26,3 +33,9 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.virtual('myQuizzes', {
+  ref: Quiz.name,            
+  localField: '_id',       
+  foreignField: 'authorId' 
+});
