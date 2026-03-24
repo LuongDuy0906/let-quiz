@@ -27,10 +27,4 @@ export class TokenService{
         ])
         return {accessToken, refreshToken};
     }
-
-    async updateRefreshToken(id: string, input: any){
-        return await this.userModel.findByIdAndUpdate(id, {
-            refreshToken: input
-        })
-    }
 }

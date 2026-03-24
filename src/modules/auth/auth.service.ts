@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { LoginDTO } from './dto/login.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -46,21 +46,38 @@ export class AuthService {
 
     const token = await this.tokenService.signToken(newUser);
     const hashToken = await bcrypt.hash(token.refreshToken, 10);
-    await this.tokenService.updateRefreshToken(String(newUser._id), hashToken);
+
+    await this.redisService.saveRedisToken(String(newUser._id), hashToken, 7);
 
     return {
       username: newUser.profile.username,
-      access_token: token
+      access_token: token.accessToken,
+      refresh_token: token.refreshToken
     };
   }
 
   async refreshToken(input: RequestPayload){
-    const existUser = await this.userService.findById(String(input.userId));
+    const existToken = await this.redisService.getRefreshToken(input.userId);
+
+    if(!existToken){
+      throw new NotFoundException("Token không tồn tại");
+    }
+
+    if(!input.refreshToken){
+      throw new UnauthorizedException("Bạn chưa đăng nhập")
+    }
+
+    const isMatch = await bcrypt.compare(input.refreshToken, existToken);
+
+    if(!isMatch){
+      throw new UnauthorizedException("Token không hợp lệ");
+    }
 
     const newToken = await this.tokenService.signToken(input);
     const newHashToken = await bcrypt.hash(newToken.refreshToken, 10);
 
-    await this.tokenService.updateRefreshToken(String(existUser?._id), newHashToken);
+    await this.redisService.saveRedisToken(input.userId, newHashToken, 7);
+
     return {
       username: input.username,
       new_access_token: newToken.accessToken,
@@ -73,7 +90,7 @@ export class AuthService {
   }
 
   async logout(id: string){
-    return await this.tokenService.updateRefreshToken(id, null);
+    await this.redisService.deleteToken(id);
   }
 
   async validateGoogleUser(googleUser: CreateUserDto){

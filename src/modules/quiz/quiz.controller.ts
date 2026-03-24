@@ -44,7 +44,7 @@ export class QuizController {
     }),
     fileFilter: imageFileFilter,
   }))
-  uploadImage(@Req() req, @UploadedFile() file: Express.Multer.File){
+  uploadImage(@UploadedFile() file: Express.Multer.File){
     return {
       image: `/uploads/quizImage/${file.filename}`
     }

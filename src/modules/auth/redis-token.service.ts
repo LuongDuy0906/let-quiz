@@ -1,5 +1,5 @@
 import { InjectRedis } from "@nestjs-modules/ioredis";
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import Redis from "ioredis";
 
 @Injectable()
@@ -15,5 +15,17 @@ export class RedisTokenService{
         const ttlInSecond = days * 24 * 60 * 60;
 
         await this.redis.set(key, token, 'EX', ttlInSecond);
+    }
+
+    async getRefreshToken(userId: string){
+        const key = `refresh_token:${userId}`;
+
+        return await this.redis.get(key);
+    }
+
+    async deleteToken(userId: string){
+        const key = `refresh_token:${userId}`;
+
+        await this.redis.del(key);
     }
 }
