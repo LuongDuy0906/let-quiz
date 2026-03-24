@@ -69,7 +69,14 @@ export class QuizController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.quizService.remove(+id);
+  remove(@Param('id') id: string, @Req() req) {
+    return this.quizService.remove(id, req.user.userId);
+  }
+
+  @Patch(':id/rating')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  rating(@Param("id") id: string, @Body() body: {rating: number}){
+    return this.quizService.rating(id, body.rating);
   }
 }

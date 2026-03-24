@@ -36,10 +36,6 @@ export class UserService {
     );
   }
 
-  async findAll() {
-    return await this.userModel.find().select('email profile -_id').exec();
-  }
-
   async findOne(email: string) {
     return await this.userModel.findOne({
       email: email
@@ -57,22 +53,10 @@ export class UserService {
       throw new NotFoundException("Không tìm thấy người dùng");
     }
 
-    const newProfile = {}
-    if(updateProfileDto.username){
-      newProfile['username'] = updateProfileDto.username
-    }
-
-    if(updateProfileDto.image){
-      newProfile['avatarUrl'] = updateProfileDto.image
-    }
-
-    await this.userModel.findByIdAndUpdate(id, {
-      profile: newProfile
-    });
-
-    const updatedProfile = await this.userModel.findById(id).select('email profile').exec();
-
-    return updatedProfile;
+    return await this.userModel.findByIdAndUpdate(id, 
+      {profile: updateProfileDto},
+      {returnDocument: 'after', runValidators: true}
+    );
   }
 
   async remove(id: string) {

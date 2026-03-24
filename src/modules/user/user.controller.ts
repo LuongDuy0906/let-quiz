@@ -11,7 +11,7 @@ import { editFileName, imageFileFilter } from 'src/common/utils/file-upload.util
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('/library')
+  @Get('library')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   findLibrary(@Req() req){
@@ -21,7 +21,6 @@ export class UserController {
   @Patch('profile')
   @ApiOperation({
     summary: 'Thêm ảnh đại diện cho người dùng',
-    description: 'Upload a profile image for the user',
   })
   @ApiConsumes('multipart/form-data')
   @UseGuards(JwtAuthGuard)
@@ -38,8 +37,10 @@ export class UserController {
     return this.userService.updateProfile(req.user.userId, updateProfileDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  @Delete()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  remove(@Req() req) {
+    return this.userService.remove(req.user.userId);
   }
 }

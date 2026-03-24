@@ -21,7 +21,7 @@ export class QuizService {
   }
 
   async findAll() {
-    return await this.quizModel.find({status: {$ne: QuizStatus.PRIVATE}}).select('authorId image title question');
+    return await this.quizModel.find({status: {$ne: QuizStatus.PRIVATE}}).populate('authorId', 'profile.username _id').select('image title createdAt').sort({createdAt: -1}).lean().exec();
   }
 
   async findOne(id: string) {
@@ -41,7 +41,32 @@ export class QuizService {
     );
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} quiz`;
+  async remove(id: string, userId: string) {
+    const existQuiz = await this.quizModel.findOne({_id: new Types.ObjectId(id), authorId: new Types.ObjectId(userId)})
+    if(!existQuiz){
+      throw new NotFoundException("Bộ đề không tồn tại");
+    }
+
+    return await this.quizModel.findByIdAndDelete(id);
+  }
+
+  async rating(id: string, rating: number){
+    const existQuiz = await this.quizModel.findById(id).select('rating ratingCount').exec();
+
+    const existRating = existQuiz?.rating || 0;
+    let existCount = existQuiz?.ratingCount || 0;
+
+    let newRating: number;
+    let newCount: number = 0;
+    
+    newCount += existCount + 1
+
+    newRating = ((existRating * existCount) + rating) / newCount
+
+    return await this.quizModel.findByIdAndUpdate({
+      _id: new Types.ObjectId(id),
+      rating: newRating,
+      ratingCount: newCount
+    })
   }
 }

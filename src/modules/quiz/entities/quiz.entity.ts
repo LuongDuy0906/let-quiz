@@ -25,6 +25,12 @@ export class Quiz {
     @Prop({type: [String], enum: QuizTag, required: true})
     tag: QuizTag[];
 
+    @Prop({default: 0})
+    rating: number;
+
+    @Prop({default: 0})
+    ratingCount: number;
+
     @Prop({type: [Question], default: []})
     question: Question[];
 
