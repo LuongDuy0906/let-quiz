@@ -13,6 +13,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../user/entities/user.entity';
 import googleOauthConfig from 'src/config/google-oauth.config';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { RedisTokenService } from './redis-token.service';
 
 @Module({
   imports: [
@@ -29,6 +30,6 @@ import { GoogleStrategy } from './strategies/google.strategy';
     ])
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TokenService, RefreshJwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, TokenService, RefreshJwtStrategy, GoogleStrategy, RedisTokenService],
 })
 export class AuthModule {}

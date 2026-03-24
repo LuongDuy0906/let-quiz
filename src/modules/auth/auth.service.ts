@@ -6,12 +6,14 @@ import { TokenService } from './token.service';
 import { ChangePasswordDTO } from '../user/dto/change-password.dto';
 import * as bcrypt from 'bcrypt'
 import { RequestPayload } from './types/request-payload';
+import { RedisTokenService } from './redis-token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly redisService: RedisTokenService
   ){}
 
   async login(input: LoginDTO) {
@@ -30,7 +32,7 @@ export class AuthService {
     const token = await this.tokenService.signToken(existUser);
     const hashToken = await bcrypt.hash(token.refreshToken, 10);
 
-    await this.tokenService.updateRefreshToken(String(existUser._id), hashToken);
+    await this.redisService.saveRedisToken(String(existUser._id), hashToken, 7);
 
     return {
       username: existUser.profile.username,
@@ -55,20 +57,10 @@ export class AuthService {
   async refreshToken(input: RequestPayload){
     const existUser = await this.userService.findById(String(input.userId));
 
-    if(!existUser || !existUser.refreshToken){
-      throw new UnauthorizedException("Phiên đăng nhập đã hết hạn")
-    }
-
-    const isMatch = await bcrypt.compare(String(input.refreshToken), existUser.refreshToken);
-
-    if(!isMatch){
-      throw new UnauthorizedException("Token không hợp lệ")
-    }
-
     const newToken = await this.tokenService.signToken(input);
     const newHashToken = await bcrypt.hash(newToken.refreshToken, 10);
 
-    await this.tokenService.updateRefreshToken(String(existUser._id), newHashToken);
+    await this.tokenService.updateRefreshToken(String(existUser?._id), newHashToken);
     return {
       username: input.username,
       new_access_token: newToken.accessToken,
