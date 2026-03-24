@@ -2,21 +2,28 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, ObjectId, Types } from "mongoose";
 import { Question } from "./question.entity";
 import { QuizStatus } from "src/enum/quizStatus";
+import { QuizTag } from "src/enum/quizTag";
 
 export type QuizDocument = HydratedDocument<Quiz>;
 
-@Schema({timestamps: true})
+@Schema({
+    timestamps: true,
+    id: false,
+    toJSON: {virtuals: true},
+    toObject: {virtuals: true}
+})
 export class Quiz {
-    _id: ObjectId;
-
     @Prop({type: Types.ObjectId, ref: 'User', required: true, index: true})
     authorId: Types.ObjectId;
 
     @Prop({required: true})
     title: string;
 
-    @Prop()
-    image?: string;
+    @Prop({required: true})
+    image: string;
+
+    @Prop({type: [String], enum: QuizTag, required: true})
+    tag: QuizTag[];
 
     @Prop({type: [Question], default: []})
     question: Question[];
@@ -26,3 +33,7 @@ export class Quiz {
 }
 
 export const QuizSchema = SchemaFactory.createForClass(Quiz);
+
+QuizSchema.virtual('totalQuestions').get(function() {
+  return this.question ? this.question.length : 0;
+});

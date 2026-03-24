@@ -62,8 +62,8 @@ export class UserService {
       newProfile['username'] = updateProfileDto.username
     }
 
-    if(updateProfileDto.avatarUrl){
-      newProfile['avatarUrl'] = updateProfileDto.avatarUrl
+    if(updateProfileDto.image){
+      newProfile['avatarUrl'] = updateProfileDto.image
     }
 
     await this.userModel.findByIdAndUpdate(id, {

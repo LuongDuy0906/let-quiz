@@ -1,7 +1,9 @@
-import { IsEnum, IsNotEmpty, IsOptional } from "class-validator";
+import { ArrayMaxSize, IsEnum, IsNotEmpty, IsOptional, Validate, ValidateNested } from "class-validator";
 import { QuestionDTO } from "./question/question.dto";
 import { QuizStatus } from "src/enum/quizStatus";
 import { ApiProperty } from "@nestjs/swagger";
+import { QuizTag } from "src/enum/quizTag";
+import { Type } from "class-transformer";
 
 export class CreateQuizDto {
     @ApiProperty({description: "Tiêu đề của bộ đề", example: "Câu hỏi địa lý"})
@@ -32,7 +34,17 @@ export class CreateQuizDto {
         }
     ]})
     @IsNotEmpty({message: "câu hỏi không được để trống"})
+    @ValidateNested({each: true})
+    @ArrayMaxSize(30, {message: "Một bộ đề chỉ có tối đa 30 câu hỏi"})
+    @Type(() => QuestionDTO)
     question: QuestionDTO[];
+
+    @ApiProperty({description: "Thể loại của bộ đề", example: [
+        'Sport',
+        'History'
+    ]})
+    @IsNotEmpty({message: "Loại đề không được để trống"})
+    tag: QuizTag[]
 
     @ApiProperty({description: "Trạng thái bộ đề", example: "public"})
     @IsOptional()

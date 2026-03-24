@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { editFileName, imageFileFilter } from 'src/common/utils/file-upload.utils';
 
 @Controller('quiz')
 export class QuizController {
@@ -17,6 +20,36 @@ export class QuizController {
     return this.quizService.create(req.user.userId, createQuizDto);
   }
 
+  @Post('/upload')
+  @ApiOperation({summary: "API tải ảnh cho bộ đề"})
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Ảnh bộ đề cũng như các câu hỏi',
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads/quizImage',
+      filename: editFileName,
+    }),
+    fileFilter: imageFileFilter,
+  }))
+  uploadImage(@Req() req, @UploadedFile() file: Express.Multer.File){
+    return {
+      image: `/uploads/quizImage/${file.filename}`
+    }
+  }
+
   @Get()
   @ApiOperation({summary: "API lấy danh sách các bộ đề"})
   findAll() {
@@ -25,12 +58,14 @@ export class QuizController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.quizService.findOne(+id);
+    return this.quizService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateQuizDto: UpdateQuizDto) {
-    return this.quizService.update(+id, updateQuizDto);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  update(@Param('id') id: string, @Req() req, @Body() updateQuizDto: UpdateQuizDto) {
+    return this.quizService.update(id, req.user.userId, updateQuizDto);
   }
 
   @Delete(':id')

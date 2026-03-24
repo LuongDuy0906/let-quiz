@@ -14,7 +14,6 @@ export type UserDocument = HydratedDocument<User>;
     }
 )
 export class User {
-    _id: ObjectId;
 
     @Prop({required: true, unique: true})
     email: string;

@@ -1,28 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { editFileName, imageFileFilter } from 'src/common/utils/file-upload.utils';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  @Get('search')
-  findOne(@Query('email') email: string) {
-    return this.userService.findOne(email);
-  }
 
   @Get('/library')
   @UseGuards(JwtAuthGuard)
@@ -31,9 +18,24 @@ export class UserController {
     return this.userService.findById(req.user.userId)
   }
 
-  @Patch(':id/profile')
-  updateProfile(@Param('id') id: string, @Body() updateProfileDto: UpdateProfileDTO) {
-    return this.userService.updateProfile(id, updateProfileDto);
+  @Patch('profile')
+  @ApiOperation({
+    summary: 'Thêm ảnh đại diện cho người dùng',
+    description: 'Upload a profile image for the user',
+  })
+  @ApiConsumes('multipart/form-data')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads/avatar',
+      filename: editFileName,
+    }),
+    fileFilter: imageFileFilter,
+  }))
+  updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDTO, @UploadedFile() file: Express.Multer.File) {
+    updateProfileDto.image = `/uploads/avatar/${file.filename}`;
+    return this.userService.updateProfile(req.user.userId, updateProfileDto);
   }
 
   @Delete(':id')

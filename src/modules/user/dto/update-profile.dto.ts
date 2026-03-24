@@ -1,9 +1,19 @@
+import { ApiBody, ApiProperty } from "@nestjs/swagger";
 import { IsOptional } from "class-validator";
 
 export class UpdateProfileDTO{
     @IsOptional()
+    @ApiProperty({description: "Tên người dùng", example: "Lương Đức Duy"})
     username: string;
 
     @IsOptional()
-    avatarUrl: string
+    @ApiProperty({ 
+        description: 'Ảnh đại diện', 
+        type: 'array',
+        items: { 
+            type: 'string',
+            format: 'binary'
+        },
+    })
+    image: string
 }
