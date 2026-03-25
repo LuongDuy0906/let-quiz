@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './modules/auth/auth.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RedisModule } from '@nestjs-modules/ioredis';
     }),
     AuthModule,
     QuizModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

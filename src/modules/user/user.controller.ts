@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
@@ -6,10 +6,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { editFileName, imageFileFilter } from 'src/common/utils/file-upload.utils';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly cloudinaryService: CloudinaryService
+  ) {}
 
   @Get('library')
   @UseGuards(JwtAuthGuard)
@@ -25,15 +29,10 @@ export class UserController {
   @ApiConsumes('multipart/form-data')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/avatar',
-      filename: editFileName,
-    }),
-    fileFilter: imageFileFilter,
-  }))
-  updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDTO, @UploadedFile() file: Express.Multer.File) {
-    updateProfileDto.image = `/uploads/avatar/${file.filename}`;
+  @UseInterceptors(FileInterceptor('image'))
+  async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDTO, @UploadedFile() file: Express.Multer.File) {
+    const result = await this.cloudinaryService.uploadImage(file);
+    updateProfileDto.image = result.secure_url;
     return this.userService.updateProfile(req.user.userId, updateProfileDto);
   }
 
