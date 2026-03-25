@@ -1,11 +1,11 @@
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { UserService } from '../user/user.service';
-import { LoginDTO } from './dto/login.dto';
-import { CreateUserDto } from '../user/dto/create-user.dto';
-import { TokenService } from './token.service';
-import { ChangePasswordDTO } from '../user/dto/change-password.dto';
+import { UserService } from '../../user/user.service';
+import { LoginDTO } from '../dto/login.dto';
+import { CreateUserDto } from '../../user/dto/create-user.dto';
+import { ChangePasswordDTO } from '../../user/dto/change-password.dto';
 import * as bcrypt from 'bcrypt'
-import { RequestPayload } from './types/request-payload';
+import { RequestPayload } from '../types/request-payload';
+import { TokenService } from './token.service';
 import { RedisTokenService } from './redis-token.service';
 
 @Injectable()

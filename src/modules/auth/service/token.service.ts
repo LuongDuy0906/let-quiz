@@ -1,12 +1,12 @@
 import { JwtService } from "@nestjs/jwt";
-import { AuthJwtPayload } from "./types/jwt-payload";
-import { User, UserDocument } from "../user/entities/user.entity";
+import { AuthJwtPayload } from "../types/jwt-payload";
+import { User, UserDocument } from "../../user/entities/user.entity";
 import { Inject, Injectable } from "@nestjs/common";
 import refreshTokenConfig from "src/config/refresh-token.config";
 import type { ConfigType } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { RefreshPayload } from "./types/refresh-payload";
+import { RefreshPayload } from "../types/refresh-payload";
 
 @Injectable()
 export class TokenService{

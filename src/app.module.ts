@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
     AuthModule,
     QuizModule,
     CloudinaryModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
