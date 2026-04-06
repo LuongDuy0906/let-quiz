@@ -1,7 +1,8 @@
 import { InjectRedis } from "@nestjs-modules/ioredis";
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import Redis from "ioredis";
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class RedisTokenService{
@@ -24,21 +25,33 @@ export class RedisTokenService{
         return await this.redis.get(key);
     }
 
-    async deleteToken(userId: string){
-        const key = `refresh_token:${userId}`;
-
+    async deleteToken(key: string){;
         await this.redis.del(key);
     }
 
     async creteResetPasswordToken(email: string): Promise<string>{
         const resetToken = crypto.randomBytes(32).toString('hex');
 
-        const hashToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const hashToken = bcrypt.hashSync(resetToken, 10);
 
         const key = `reset_token:${email}`;
 
-        await this.redis.set(key, resetToken, 'EX', 900);
+        await this.redis.set(key, hashToken, 'EX', 900);
 
         return resetToken;
+    }
+
+    async validateToken(email: string, token: string){
+        const key = `reset_token:${email}`;
+
+        const hashToken = await this.redis.get(key);
+
+        if(!hashToken){
+            return false;
+        }
+
+        const isMatch = await bcrypt.compare(token, hashToken);
+
+        return isMatch
     }
 }

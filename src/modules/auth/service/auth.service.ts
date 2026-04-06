@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserService } from '../../user/user.service';
 import { LoginDTO } from '../dto/login.dto';
 import { CreateUserDto } from '../../user/dto/create-user.dto';
@@ -7,13 +7,15 @@ import * as bcrypt from 'bcrypt'
 import { RequestPayload } from '../types/request-payload';
 import { TokenService } from './token.service';
 import { RedisTokenService } from './redis-token.service';
+import { MailService } from 'src/modules/mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
-    private readonly redisService: RedisTokenService
+    private readonly redisService: RedisTokenService,
+    private readonly mailService: MailService
   ){}
 
   async login(input: LoginDTO) {
@@ -35,7 +37,6 @@ export class AuthService {
     await this.redisService.saveRedisToken(String(existUser._id), hashToken, 7);
 
     return {
-      username: existUser.profile.username,
       access_token: token.accessToken,
       refresh_token: token.refreshToken
     };
@@ -50,7 +51,6 @@ export class AuthService {
     await this.redisService.saveRedisToken(String(newUser._id), hashToken, 7);
 
     return {
-      username: newUser.profile.username,
       access_token: token.accessToken,
       refresh_token: token.refreshToken
     };
@@ -85,12 +85,33 @@ export class AuthService {
     }
   }
 
+  async forgotPassword(email: string){
+    const resetToken = await this.redisService.creteResetPasswordToken(email);
+
+    try {
+      await this.mailService.sendPasswordResetEmail(email, resetToken);
+      return "Gửi yêu cầu thành công"
+    } catch(e){
+      console.log('Lỗi gửi email');
+      await this.redisService.deleteToken(`reset_token:${email}`);
+      throw new BadRequestException("Không thể gửi thực hiện yêu cầu thay đổi mật khẩu");
+    }
+  }
+
   async changePassword(id: string, input: ChangePasswordDTO){
-    return await this.userService.changePassword(id, input);
+    const isMatch = await this.redisService.validateToken(input.email, input.token);
+
+    if(!isMatch){
+      throw new UnauthorizedException("Không thể đổi lại mật khẩu");
+    }
+    
+    await this.userService.changePassword(id, input.newPassword)
+    await this.redisService.deleteToken(`reset_token:${input.email}`)
+    return "Đổi mật khẩu thành công";
   }
 
   async logout(id: string){
-    await this.redisService.deleteToken(id);
+    await this.redisService.deleteToken(`refresh_token:${id}`);
   }
 
   async validateGoogleUser(googleUser: CreateUserDto){

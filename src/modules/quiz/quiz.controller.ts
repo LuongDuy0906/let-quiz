@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
@@ -59,6 +59,11 @@ export class QuizController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.quizService.findOne(id);
+  }
+
+  @Get(':tag')
+  findByTag(@Param('tag') tag: string){
+    return this.findByTag(tag);
   }
 
   @Patch(':id')

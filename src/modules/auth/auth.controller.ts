@@ -7,6 +7,7 @@ import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { ChangePasswordDTO } from '../user/dto/change-password.dto';
 import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
+import { ForgotPasswordDTO } from './dto/forgot-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,6 +28,11 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard)
   refreshToken(@Req() req){
     return this.authService.refreshToken(req.user);
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() body: ForgotPasswordDTO){
+    return this.authService.forgotPassword(body.email);
   }
 
   @Patch(':id/change-password')

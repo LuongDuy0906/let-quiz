@@ -21,7 +21,13 @@ export class QuizService {
   }
 
   async findAll() {
-    return await this.quizModel.find({status: {$ne: QuizStatus.PRIVATE}}).populate('authorId', 'profile.username _id').select('image title createdAt').sort({createdAt: -1}).lean().exec();
+    return await this.quizModel.find({status: {$ne: QuizStatus.PRIVATE}}).populate('authorId', 'profile.username _id').select('rating image title createdAt').sort({createdAt: -1}).lean().exec();
+  }
+
+  async findByTag(tag: string){
+    return await this.quizModel.find({
+      tag: tag
+    }).populate('authorId', 'profile.username _id').select('image title createdAt').sort({createdAt: -1}).lean().exec();
   }
 
   async findOne(id: string) {
