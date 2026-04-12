@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Ip, NotFoundException } from '@nestjs/common';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Quiz, QuizDocument } from './entities/quiz.entity';
 import { Model, Types } from 'mongoose';
 import { QuizStatus } from 'src/enum/quizStatus';
+import { ParamDTO } from './dto/params.dto';
 
 @Injectable()
 export class QuizService {
@@ -20,15 +21,24 @@ export class QuizService {
     });
   }
 
-  async findAll() {
-    return await this.quizModel.find({status: {$ne: QuizStatus.PRIVATE}}).populate('authorId', 'profile.username _id').select('rating image title createdAt').sort({createdAt: -1}).lean().exec();
-  }
+  async findAll(input: ParamDTO){
+    const {tag, sort = 'createdAt'} = input;
+    const filter: any = {status: {$ne: QuizStatus.PRIVATE}};
 
-  async findByTag(tag: string){
-    return await this.quizModel.find({
-      tag: tag
-    }).populate('authorId', 'profile.username _id').select('image title createdAt').sort({createdAt: -1}).lean().exec();
-  }
+    if(tag){
+      filter.tag = tag;
+    }
+
+    const [data, total] = await Promise.all([
+      this.quizModel.find(filter).populate('authorId', 'profile.username').select('image title rating createdAt').sort({[sort]: -1}).limit(5).lean().exec(),
+      this.quizModel.countDocuments(filter)
+    ]);
+
+    return {
+      data: data,
+      total: total,
+    }
+  }                                                           
 
   async findOne(id: string) {
     return await this.quizModel.findById(id).select('title image question tag status').exec();

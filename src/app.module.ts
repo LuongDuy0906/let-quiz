@@ -9,6 +9,8 @@ import { QuizModule } from './modules/quiz/quiz.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { MailModule } from './modules/mail/mail.module';
+import { GameSessionModule } from './modules/game-session/game-session.module';
+import { PlayerRecordModule } from './modules/player-record/player-record.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { MailModule } from './modules/mail/mail.module';
     QuizModule,
     CloudinaryModule,
     MailModule,
+    GameSessionModule,
+    PlayerRecordModule,
   ],
   controllers: [AppController],
   providers: [AppService],

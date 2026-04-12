@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagg
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { editFileName, imageFileFilter } from 'src/common/utils/file-upload.utils';
+import { ParamDTO } from './dto/params.dto';
 
 @Controller('quiz')
 export class QuizController {
@@ -52,8 +53,8 @@ export class QuizController {
 
   @Get()
   @ApiOperation({summary: "API lấy danh sách các bộ đề"})
-  findAll() {
-    return this.quizService.findAll();
+  findAll(@Query() param: ParamDTO) {
+    return this.quizService.findAll(param);
   }
 
   @Get(':id')
