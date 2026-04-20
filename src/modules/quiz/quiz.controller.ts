@@ -5,13 +5,15 @@ import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { editFileName, imageFileFilter } from 'src/common/utils/file-upload.utils';
 import { ParamDTO } from './dto/params.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('quiz')
 export class QuizController {
-  constructor(private readonly quizService: QuizService) {}
+  constructor(
+    private readonly quizService: QuizService,
+    private readonly cloudinaryService: CloudinaryService
+  ) {}
 
   @Post()
   @ApiOperation({summary: "API tạo bộ đề"})
@@ -38,16 +40,12 @@ export class QuizController {
   })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/quizImage',
-      filename: editFileName,
-    }),
-    fileFilter: imageFileFilter,
-  }))
-  uploadImage(@UploadedFile() file: Express.Multer.File){
+  @UseInterceptors(FileInterceptor('image'))
+  async uploadImage(@UploadedFile() file: Express.Multer.File){
+    const result = await this.cloudinaryService.uploadImage(file);
+
     return {
-      image: `/uploads/quizImage/${file.filename}`
+      image: result.secure_url
     }
   }
 

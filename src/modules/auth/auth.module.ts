@@ -13,7 +13,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../user/entities/user.entity';
 import googleOauthConfig from 'src/config/google-oauth.config';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { RedisTokenService } from './service/redis-token.service';
+import { RedisTokenService } from './service/token.redis.service';
 
 @Module({
   imports: [

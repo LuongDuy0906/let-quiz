@@ -6,7 +6,7 @@ import { ChangePasswordDTO } from '../../user/dto/change-password.dto';
 import * as bcrypt from 'bcrypt'
 import { RequestPayload } from '../types/request-payload';
 import { TokenService } from './token.service';
-import { RedisTokenService } from './redis-token.service';
+import { RedisTokenService } from './token.redis.service';
 import { MailService } from 'src/modules/mail/mail.service';
 
 @Injectable()

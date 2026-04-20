@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
+import { GameSettings } from "./game-setting.entity";
 
 export type GameSessionDocument = HydratedDocument<GameSession>;
 
@@ -13,14 +14,19 @@ export class GameSession{
     _id: Types.ObjectId;
 
     @Prop({type: Types.ObjectId, required: true})
-    quizzId: Types.ObjectId;
+    quizId: Types.ObjectId;
+
+    @Prop({type: Types.ObjectId, required: true})
+    hostId: Types.ObjectId
 
     @Prop({required: true})
-    pin: number;
+    pin: string;
+    
+    @Prop({type: [GameSettings], default: () => ({})})
+    gameSettings: GameSettings
 
-    @Prop({required: true, enum: ['COMPLETED', 'ABORTED']})
+    @Prop({required: true, enum: ['COMPLETED', 'ABORTED', 'LOBBY']})
     status: string;
-
 
     @Prop({required: true})
     metrics: {
