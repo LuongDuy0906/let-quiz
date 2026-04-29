@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { GameSettings } from "./game-setting.entity";
+import { GameMetrics } from "./game-metrics.entity";
 
 export type GameSessionDocument = HydratedDocument<GameSession>;
 
@@ -28,11 +29,8 @@ export class GameSession{
     @Prop({required: true, enum: ['COMPLETED', 'ABORTED', 'LOBBY']})
     status: string;
 
-    @Prop({required: true})
-    metrics: {
-       totalPlayer: number,
-       averageScore: number 
-    };
+    @Prop({type: [GameMetrics], required: true})
+    metrics: GameMetrics;
 }
 
 export const GameSessionSchema = SchemaFactory.createForClass(GameSession);

@@ -1,5 +1,5 @@
 export type RequestPayload = {
-    userId: string,
+    _id: string,
     username: string,
     role: string,
     refreshToken?: string

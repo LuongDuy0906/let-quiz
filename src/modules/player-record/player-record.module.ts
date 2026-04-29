@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PlayerRecordService } from './player-record.service';
+import { PlayerRecordService } from './services/player-record.service';
 import { PlayerRecordController } from './player-record.controller';
 
 @Module({

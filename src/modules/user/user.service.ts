@@ -49,7 +49,28 @@ export class UserService {
   }
 
   async findById(id: string){
-    return await this.userModel.findById(id).populate('myQuizzes', "title status question").select('profile').exec();
+    const user = await this.userModel.findById(id).populate('myQuizzes', "title status question rating ratingCount").select('profile email myQuizzes').lean().exec();
+    if(!user){
+      throw new NotFoundException("Không tìm thấy người dùng");
+    }
+
+    let allRating = 0;
+    let allRatingCount = 0;
+    const myQuizzes = (user as any).myQuizzes as any[];
+
+    for(const quiz of myQuizzes){
+      if(quiz.ratingCount && quiz.ratingCount > 0) {
+        allRating += quiz.rating * quiz.ratingCount;
+        allRatingCount += quiz.ratingCount;
+      }
+    }
+
+    const averageUserRating = allRatingCount > 0 ? Math.round((allRating / allRatingCount) * 10) / 10 : 0;
+    return {
+      ...user,
+      averageRating: averageUserRating,
+      totalReview: allRatingCount
+    };
   }
 
   async updateProfile(id: string, updateProfileDto: UpdateProfileDTO) {
@@ -64,6 +85,24 @@ export class UserService {
       {returnDocument: 'after', runValidators: true}
     );
   }
+
+    async updateAvatar(userId: string, avatarUrl: string){
+      const existQuiz = await this.userModel.findById(userId);
+      if(!existQuiz){
+        throw new NotFoundException("Bộ đề không tồn tại");
+      }
+      
+      return await this.userModel.findByIdAndUpdate(userId, 
+        {
+          profile: {
+            avatarUrl: avatarUrl
+          }
+        },
+        {
+          returnDocument: 'after', runValidators: true
+        }
+      )
+    }
 
   async remove(id: string) {
     return await this.userModel.findByIdAndDelete(id);

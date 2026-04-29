@@ -4,10 +4,10 @@ import { LoginDTO } from '../dto/login.dto';
 import { CreateUserDto } from '../../user/dto/create-user.dto';
 import { ChangePasswordDTO } from '../../user/dto/change-password.dto';
 import * as bcrypt from 'bcrypt'
-import { RequestPayload } from '../types/request-payload';
 import { TokenService } from './token.service';
 import { RedisTokenService } from './token.redis.service';
 import { MailService } from 'src/modules/mail/mail.service';
+import { RequestPayload } from '../types/request-payload';
 
 @Injectable()
 export class AuthService {
@@ -57,7 +57,8 @@ export class AuthService {
   }
 
   async refreshToken(input: RequestPayload){
-    const existToken = await this.redisService.getRefreshToken(input.userId);
+    console.log(input._id);
+    const existToken = await this.redisService.getRefreshToken(input._id);
 
     if(!existToken){
       throw new NotFoundException("Token không tồn tại");
@@ -76,7 +77,7 @@ export class AuthService {
     const newToken = await this.tokenService.signToken(input);
     const newHashToken = await bcrypt.hash(newToken.refreshToken, 10);
 
-    await this.redisService.saveRedisToken(input.userId, newHashToken, 7);
+    await this.redisService.saveRedisToken(input._id, newHashToken, 7);
 
     return {
       username: input.username,

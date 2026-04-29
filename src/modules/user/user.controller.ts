@@ -24,16 +24,24 @@ export class UserController {
 
   @Patch('profile')
   @ApiOperation({
-    summary: 'Thêm ảnh đại diện cho người dùng',
+    summary: 'Cập nhật hồ sơ người dùng',
   })
+  async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDTO) {
+    return this.userService.updateProfile(req.user.userId, updateProfileDto);
+  }
+
+  @Patch('profile/avatar')
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Cập nhật ảnh đại diện người dùng'
+  })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @UseInterceptors(FileInterceptor('image'))
-  async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDTO, @UploadedFile() file: Express.Multer.File) {
-    const result = await this.cloudinaryService.uploadImage(file);
-    updateProfileDto.image = result.secure_url;
-    return this.userService.updateProfile(req.user.userId, updateProfileDto);
+  async updateAvatar(@Req() req, @UploadedFile() file: Express.Multer.File){
+    const result = await this.cloudinaryService.uploadAvatar(file);
+
+    return await this.userService.updateAvatar(req.user.userId, result.secure_url);
   }
 
   @Delete()

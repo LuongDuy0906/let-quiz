@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePlayerRecordDto } from './dto/create-player-record.dto';
-import { UpdatePlayerRecordDto } from './dto/update-player-record.dto';
+import { CreatePlayerRecordDto } from '../dto/create-player-record.dto';
+import { UpdatePlayerRecordDto } from '../dto/update-player-record.dto';
 
 @Injectable()
 export class PlayerRecordService {

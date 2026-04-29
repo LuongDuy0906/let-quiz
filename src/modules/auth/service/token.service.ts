@@ -19,8 +19,8 @@ export class TokenService{
     ) {}
 
     async signToken(user: any){
-        const accessPayload: AuthJwtPayload = {sub: String(user._id), username: user.profile?.username || user.username, role: user.role};
-        const refreshPayload: RefreshPayload = {sub: String(user._id)};
+        const accessPayload: AuthJwtPayload = {sub: String(user._id)};
+        const refreshPayload: AuthJwtPayload = {sub: String(user._id)};
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(accessPayload),
             this.jwtService.signAsync(refreshPayload, this.refreshTokenService)

@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { PlayerRecordService } from './player-record.service';
+import { PlayerRecordService } from './services/player-record.service';
 import { CreatePlayerRecordDto } from './dto/create-player-record.dto';
 import { UpdatePlayerRecordDto } from './dto/update-player-record.dto';
 
