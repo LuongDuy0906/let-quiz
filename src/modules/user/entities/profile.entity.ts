@@ -6,4 +6,7 @@ export class Profile{
 
     @Prop()
     avatarUrl: string;
+
+    @Prop({default: 0})
+    averageRating: number;
 }

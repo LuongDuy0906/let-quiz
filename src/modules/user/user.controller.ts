@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
@@ -15,11 +15,18 @@ export class UserController {
     private readonly cloudinaryService: CloudinaryService
   ) {}
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getMe(@Req() req){
+    return this.userService.getMe(req.user.userId)
+  }
+
   @Get('library')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  findLibrary(@Req() req){
-    return this.userService.findById(req.user.userId)
+  findLibrary(@Req() req, @Query('page') page: number, @Query('limit') limit: number){
+    return this.userService.findLibraryById(req.user.userId, page, limit)
   }
 
   @Patch('profile')

@@ -7,12 +7,15 @@ import * as bcrypt from 'bcrypt'
 import { generateCode } from 'src/common/utils/generateCode.utils';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
+import { Quiz, QuizDocument } from '../quiz/entities/quiz.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>
+    private readonly userModel: Model<UserDocument>,
+    @InjectModel(Quiz.name)
+    private readonly quizModel: Model<QuizDocument>
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -48,28 +51,36 @@ export class UserService {
     }).select('email password profile role').exec();
   }
 
-  async findById(id: string){
-    const user = await this.userModel.findById(id).populate('myQuizzes', "title status question rating ratingCount").select('profile email myQuizzes').lean().exec();
+  async getMe(id: string){
+    const user = await this.userModel.findById(id).select('email profile role').exec();
     if(!user){
       throw new NotFoundException("Không tìm thấy người dùng");
     }
+    return user;
+  }
 
-    let allRating = 0;
-    let allRatingCount = 0;
-    const myQuizzes = (user as any).myQuizzes as any[];
+  async findLibraryById(id: string, page: number, limit: number){
+    const skip = (page - 1) * limit;
 
-    for(const quiz of myQuizzes){
-      if(quiz.ratingCount && quiz.ratingCount > 0) {
-        allRating += quiz.rating * quiz.ratingCount;
-        allRatingCount += quiz.ratingCount;
-      }
-    }
+    const [quizzes, totalQuizzes] = await Promise.all([
+      this.quizModel.find({authorId: id})
+        .select('title status question rating ratingCount createdAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.quizModel.countDocuments({authorId: id})
+    ]);
 
-    const averageUserRating = allRatingCount > 0 ? Math.round((allRating / allRatingCount) * 10) / 10 : 0;
     return {
-      ...user,
-      averageRating: averageUserRating,
-      totalReview: allRatingCount
+      data: quizzes,
+      pagination: {
+        currentPage: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(totalQuizzes / limit),
+        totalItems: totalQuizzes
+      }
     };
   }
 
@@ -122,5 +133,31 @@ export class UserService {
     })
 
     return "Cập nhật mật khẩu thành công";
+  }
+
+  async updatedUserRating(id: string){
+    const user = await this.userModel.findById(id).populate('myQuizzes', "rating ratingCount").lean().exec();
+    if(!user){
+      throw new NotFoundException("Không tìm thấy người dùng");
+    }
+
+    let allRating = 0;
+    let allRatingCount = 0;
+    const myQuizzes = (user as any).myQuizzes as any[];
+
+    for(const quiz of myQuizzes){
+      if(quiz.ratingCount && quiz.ratingCount > 0) {
+        allRating += quiz.rating * quiz.ratingCount;
+        allRatingCount += quiz.ratingCount;
+      }
+    }
+
+    const averageUserRating = allRatingCount > 0 ? Math.round((allRating / allRatingCount) * 10) / 10 : 0;
+    await this.userModel.findByIdAndUpdate(id, {
+      profile: {
+        averageRating: averageUserRating,
+      }
+    });
+
   }
 }

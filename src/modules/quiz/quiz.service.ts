@@ -6,18 +6,20 @@ import { Quiz, QuizDocument } from './entities/quiz.entity';
 import { Model, Types } from 'mongoose';
 import { QuizStatus } from 'src/enum/quizStatus';
 import { ParamDTO } from './dto/params.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class QuizService {
   constructor(
     @InjectModel(Quiz.name)
-    private readonly quizModel: Model<QuizDocument>
+    private readonly quizModel: Model<QuizDocument>,
+    private readonly userService: UserService
   ) {}
 
   async create(userId: string, createQuizDto: CreateQuizDto) {
     return await this.quizModel.create({
       authorId: new Types.ObjectId(userId),
-      ...createQuizDto
+      ...createQuizDto,
     });
   }
 
@@ -67,22 +69,29 @@ export class QuizService {
   }
 
   async rating(id: string, rating: number){
-    const existQuiz = await this.quizModel.findById(id).select('rating ratingCount').exec();
+    const existQuiz = await this.quizModel.findById(id).select('rating ratingCount authorId').exec();
+
+    if(!existQuiz){
+      throw new NotFoundException("Bộ đề không tồn tại");
+    }
 
     const existRating = existQuiz?.rating || 0;
     let existCount = existQuiz?.ratingCount || 0;
 
-    let newRating: number;
-    let newCount: number = 0;
-    
-    newCount += existCount + 1
+    const newCount = existCount + 1;
+    const newRating = Math.round((((existRating * existCount) + rating) / newCount) * 10) / 10;
 
-    newRating = ((existRating * existCount) + rating) / newCount
+    const updatedQuiz = await this.quizModel.findByIdAndUpdate(
+      id,
+      {
+        rating: newRating,
+        ratingCount: newCount
+      },
+      {new: true}
+    )
 
-    return await this.quizModel.findByIdAndUpdate({
-      _id: new Types.ObjectId(id),
-      rating: newRating,
-      ratingCount: newCount
-    })
+    await this.userService.updatedUserRating(existQuiz.authorId.toString());
+
+    return updatedQuiz;
   }
 }

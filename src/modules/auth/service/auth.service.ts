@@ -57,7 +57,6 @@ export class AuthService {
   }
 
   async refreshToken(input: RequestPayload){
-    console.log(input._id);
     const existToken = await this.redisService.getRefreshToken(input._id);
 
     if(!existToken){
