@@ -2,11 +2,10 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './entities/user.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt'
 import { generateCode } from 'src/common/utils/generateCode.utils';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
-import { ChangePasswordDTO } from './dto/change-password.dto';
 import { Quiz, QuizDocument } from '../quiz/entities/quiz.entity';
 
 @Injectable()
@@ -63,14 +62,14 @@ export class UserService {
     const skip = (page - 1) * limit;
 
     const [quizzes, totalQuizzes] = await Promise.all([
-      this.quizModel.find({authorId: id})
+      this.quizModel.find({authorId: new Types.ObjectId(id)})
         .select('title status question rating ratingCount createdAt')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean()
         .exec(),
-      this.quizModel.countDocuments({authorId: id})
+      this.quizModel.countDocuments({authorId: new Types.ObjectId(id)})
     ]);
 
     return {
@@ -92,30 +91,40 @@ export class UserService {
     }
 
     return await this.userModel.findByIdAndUpdate(id, 
-      {profile: updateProfileDto},
+      {
+        $set: {
+          'profile.username': updateProfileDto.username || existUser.profile.username
+        }
+      },
       {returnDocument: 'after', runValidators: true}
     );
   }
 
-    async updateAvatar(userId: string, avatarUrl: string){
-      const existQuiz = await this.userModel.findById(userId);
-      if(!existQuiz){
-        throw new NotFoundException("Bộ đề không tồn tại");
-      }
-      
-      return await this.userModel.findByIdAndUpdate(userId, 
-        {
-          profile: {
-            avatarUrl: avatarUrl
-          }
-        },
-        {
-          returnDocument: 'after', runValidators: true
-        }
-      )
+  async updateAvatar(userId: string, avatarUrl: string){
+    const existQuiz = await this.userModel.findById(userId);
+    if(!existQuiz){
+      throw new NotFoundException("Bộ đề không tồn tại");
     }
+      
+    return await this.userModel.findByIdAndUpdate(userId, 
+      {
+        $set: {
+          'profile.avatarUrl': avatarUrl
+        }
+      },
+      {
+        new: true, runValidators: true
+      }
+    )
+  }
 
   async remove(id: string) {
+    const isUserExist = await this.userModel.findById(id).exec();
+
+    if(!isUserExist){
+      throw new NotFoundException("Không tìm thấy người dùng");
+     }
+     
     return await this.userModel.findByIdAndDelete(id);
   }
 

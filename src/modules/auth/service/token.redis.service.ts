@@ -42,16 +42,36 @@ export class RedisTokenService{
     }
 
     async validateToken(email: string, token: string){
-        const key = `reset_token:${email}`;
+        console.log(email + " " + token);
 
-        const hashToken = await this.redis.get(key);
+        const keyReset = `reset_token:${email}`;
+        const keyDelete = `delete_token:${email}`;
 
-        if(!hashToken){
-            return false;
+        const hashToken = await this.redis.get(keyReset);
+        const hashDeleteToken = await this.redis.get(keyDelete);
+
+        let isMatch: boolean = false;
+
+        if(hashToken){
+            isMatch = await bcrypt.compare(token, hashToken);
+        } else if(hashDeleteToken){
+            isMatch = await bcrypt.compare(token, hashDeleteToken);
         }
 
-        const isMatch = await bcrypt.compare(token, hashToken);
+        console.log(isMatch);
 
         return isMatch
+    }
+
+    async createDeleteToken(email: string){
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        const hashToken = bcrypt.hashSync(resetToken, 10);
+
+        const key = `delete_token:${email}`;
+
+        await this.redis.set(key, hashToken, 'EX', 900);
+
+        return resetToken;
     }
 }

@@ -33,6 +33,8 @@ export class UserController {
   @ApiOperation({
     summary: 'Cập nhật hồ sơ người dùng',
   })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDTO) {
     return this.userService.updateProfile(req.user.userId, updateProfileDto);
   }

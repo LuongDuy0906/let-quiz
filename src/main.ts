@@ -19,7 +19,7 @@ async function bootstrap() {
       whitelist: true,      
       forbidNonWhitelisted: true,
       transform: true,      
-      disableErrorMessages: true
+      disableErrorMessages: false
     }));
 
   app.enableCors();

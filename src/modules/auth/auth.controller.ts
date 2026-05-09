@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { ChangePasswordDTO } from '../user/dto/change-password.dto';
 import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { ForgotPasswordDTO } from './dto/forgot-password.dto';
+import { DeleteAccountDTO } from '../user/dto/delete-account.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -31,15 +32,30 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @UseGuards(JwtAuthGuard)
   forgotPassword(@Body() body: ForgotPasswordDTO){
     return this.authService.forgotPassword(body.email);
   }
 
-  @Patch(':id/change-password')
+  @Patch('change-password')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  changePassword(@Param('id') id: string, @Body() body: ChangePasswordDTO){
-    return this.authService.changePassword(id, body);
+  changePassword(@Req() req, @Body() body: ChangePasswordDTO){
+    return this.authService.changePassword(req.user.userId, body);
+  }
+
+  @Post('delete-account')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  sendDeleteAccount(@Body() body: ForgotPasswordDTO){
+    return this.authService.sendDeleteAccount(body.email);
+  }
+
+  @Post('delete-account/confirm')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  doDeleteAccount(@Req() req, @Body() body: DeleteAccountDTO){
+    return this.authService.doDeleteAccount(req.user.userId, body);
   }
 
   @Get('/logout')
@@ -48,7 +64,7 @@ export class AuthController {
   logout(@Req() req){
     const userId = req.user.userId;
     
-    return this.authService.logout(userId);;
+    this.authService.logout(userId);
   }
 
   @Get('google/login')

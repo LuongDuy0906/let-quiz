@@ -8,6 +8,7 @@ import { TokenService } from './token.service';
 import { RedisTokenService } from './token.redis.service';
 import { MailService } from 'src/modules/mail/mail.service';
 import { RequestPayload } from '../types/request-payload';
+import { DeleteAccountDTO } from 'src/modules/user/dto/delete-account.dto';
 
 @Injectable()
 export class AuthService {
@@ -90,7 +91,7 @@ export class AuthService {
 
     try {
       await this.mailService.sendPasswordResetEmail(email, resetToken);
-      return "Gửi yêu cầu thành công"
+      return {message: "Đã gửi email thành công"};
     } catch(e){
       console.log('Lỗi gửi email');
       await this.redisService.deleteToken(`reset_token:${email}`);
@@ -107,7 +108,42 @@ export class AuthService {
     
     await this.userService.changePassword(id, input.newPassword)
     await this.redisService.deleteToken(`reset_token:${input.email}`)
-    return "Đổi mật khẩu thành công";
+    return {
+      succes: true,
+      message: "Đổi mật khẩu thành công"
+    };
+  }
+
+  async sendDeleteAccount(email: string){
+    const deleteToken = await this.redisService.createDeleteToken(email);
+
+    try{
+      await this.mailService.sendDeleteAccountEmail(email, deleteToken);
+      return {
+        succes: true,
+        message: "Đã gửi email xác nhận xoá tài khoản thành công"
+      };
+    } catch (e) {
+      console.log('Lỗi gửi email', e);
+      await this.redisService.deleteToken(`delete_token:${email}`);
+      throw new BadRequestException("Không thể gửi thực hiện yêu cầu xoá tài khoản");
+    }
+  }
+
+  async doDeleteAccount(id: string, deleteAccountDTO: DeleteAccountDTO){ 
+    const isMatch = await this.redisService.validateToken(deleteAccountDTO.email, deleteAccountDTO.token);
+
+    if(!isMatch){
+      throw new UnauthorizedException("Không thể thực hiện yêu cầu xoá tài khoản");
+    }
+
+    await this.userService.remove(id);
+    await this.redisService.deleteToken(`delete_token:${deleteAccountDTO.email}`);
+
+    return {
+      succes: true,
+      message: "Xoá tài khoản thành công"
+    }
   }
 
   async logout(id: string){
