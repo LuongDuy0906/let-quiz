@@ -21,4 +21,7 @@ export class Question{
 
     @Prop({default: 10})
     point: number;
+
+    @Prop({default: ''})
+    information: string;
 }

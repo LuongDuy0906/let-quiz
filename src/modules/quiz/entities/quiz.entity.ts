@@ -34,6 +34,9 @@ export class Quiz {
     @Prop({type: [Question], default: []})
     question: Question[];
 
+    @Prop({default: ''})
+    description: string;
+
     @Prop({type: String, enum: QuizStatus, default: QuizStatus.PUBLIC})
     status: QuizStatus;
 }

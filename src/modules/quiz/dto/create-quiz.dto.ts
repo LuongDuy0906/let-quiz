@@ -39,6 +39,9 @@ export class CreateQuizDto {
     @Type(() => QuestionDTO)
     question: QuestionDTO[];
 
+    @IsOptional()
+    description: string;
+
     @ApiProperty({description: "Thể loại của bộ đề", example: [
         'Sport',
         'History'

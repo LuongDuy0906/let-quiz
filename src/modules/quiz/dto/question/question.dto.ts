@@ -1,4 +1,4 @@
-import { ArrayMaxSize, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsPositive, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min, ValidateNested } from "class-validator";
 import { QuestionType } from "src/enum/questionType";
 import { OptionDTO } from "../answer/option.dto";
 import { Type } from "class-transformer";
@@ -30,4 +30,7 @@ export class QuestionDTO{
     @IsNumber({}, {message: "Điểm phải là kiểu số"})
     @Min(10, {message: "Điểm số ít nhất phải là 10"})
     point: number;
+
+    @IsOptional()
+    information: string
 }

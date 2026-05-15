@@ -23,7 +23,7 @@ export class QuizController {
     return this.quizService.create(req.user.userId, createQuizDto);
   }
 
-  @Post('/upload')
+  @Post('upload')
   @ApiOperation({summary: "API tải ảnh cho bộ đề"})
   @ApiConsumes('multipart/form-data')
   @ApiBody({
