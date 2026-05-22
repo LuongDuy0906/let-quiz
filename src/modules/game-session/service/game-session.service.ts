@@ -27,7 +27,7 @@ export class GameSessionService {
       pin: pin,
       quizId: gameSessionData.quizId, 
       hostId: gameSessionData.hostId,
-      status: "COMPLETED",
+      status: "STARTING",
       metrics: {
         totalPlayer: 3,
         averageScore: 3
@@ -51,6 +51,4 @@ export class GameSessionService {
   remove(id: number) {
     return `This action removes a #${id} gameSession`;
   }
-
-  
 }

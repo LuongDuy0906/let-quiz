@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePlayerRecordDto } from '../dto/create-player-record.dto';
 import { UpdatePlayerRecordDto } from '../dto/update-player-record.dto';
+import { PlayerRecordRedisService } from './player-record.redis.service';
+import { GameSessionRedisService } from 'src/modules/game-session/service/game-session.redis.service';
 
 @Injectable()
 export class PlayerRecordService {
+
   create(createPlayerRecordDto: CreatePlayerRecordDto) {
     return 'This action adds a new playerRecord';
   }

@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import Redis from "ioredis";
 import { Types } from "mongoose";
 import { RequestPayload } from "src/modules/auth/types/request-payload";
+import { CreateGameSessionDto } from "../dto/create-game-session.dto";
 
 @Injectable()
 export class GameSessionRedisService{
@@ -12,12 +13,12 @@ export class GameSessionRedisService{
     ) {}
 
     async getGameSession(pin: string){
-        const key: string = `game:room:${pin}:infor`;
+        const key: string = `game:room:${pin}:info`;
 
         return await this.redis.get(key);
     }
 
-    async initGameSession(hostId: string, quizId: string){
+    async initGameSession(hostId: string, body: CreateGameSessionDto){
         const sessionId = new Types.ObjectId().toString();
         const pin = await this.generatePinned();
 
@@ -27,7 +28,12 @@ export class GameSessionRedisService{
             _id: sessionId,
             pin: pin,
             hostId: new Types.ObjectId(hostId),
-            status: "LOBBY"
+            status: "LOBBY",
+            quizId: new Types.ObjectId(body.quizId),
+            gameSettings: {
+                timePerQuestion: 30,
+                maxPlayer: 10
+            }
         }
 
         await this.redis.set(key, JSON.stringify(newGameSession), 'EX', 86400);
@@ -40,11 +46,11 @@ export class GameSessionRedisService{
         let isPinUsed = true;
 
         while(isPinUsed){
-        pin = Math.floor(100000 + Math.random() * 900000).toString();
-        const isExist = await this.checkRoomPin(pin);
-        if(!isExist){
-            isPinUsed = false;
-        }
+            pin = Math.floor(100000 + Math.random() * 900000).toString();
+            const isExist = await this.checkRoomPin(pin);
+            if(!isExist){
+                isPinUsed = false;
+            }
         }
 
         return pin;

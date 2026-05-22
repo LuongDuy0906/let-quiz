@@ -4,6 +4,7 @@ import { CreateGameSessionDto } from './dto/create-game-session.dto';
 import { UpdateGameSessionDto } from './dto/update-game-session.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { GameSessionRedisService } from './service/game-session.redis.service';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('game-session')
 export class GameSessionController {
@@ -14,7 +15,8 @@ export class GameSessionController {
 
   @Post('init')
   @UseGuards(JwtAuthGuard)
-  create(@Req() req, @Body('quizId') body: string) {
+  @ApiBearerAuth()
+  create(@Req() req, @Body() body: CreateGameSessionDto) {
     return this.gameSessionRedisService.initGameSession(req.user.userId, body);
   }
 
