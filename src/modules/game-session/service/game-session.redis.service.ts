@@ -30,16 +30,24 @@ export class GameSessionRedisService{
             hostId: new Types.ObjectId(hostId),
             status: "LOBBY",
             quizId: new Types.ObjectId(body.quizId),
-            gameSettings: {
-                timePerQuestion: 30,
-                maxPlayer: 10
-            }
+            gameSettings: body.gameSettings,
         }
 
         await this.redis.set(key, JSON.stringify(newGameSession), 'EX', 86400);
 
         return { pin, sessionId };
     }
+
+    async getGameSessionByPin(pin: string){
+        const key: string = `game:room:${pin}:infor`;
+        const sessionData = await this.redis.get(key);
+        if(sessionData){
+            return JSON.parse(sessionData);
+        }
+        return null;
+    }
+
+    async updateGameSessionStatus(pin: string, status: string){}
 
     async generatePinned(): Promise<string> {
         let pin: string = "";

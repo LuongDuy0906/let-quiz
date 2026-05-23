@@ -1,18 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePlayerRecordDto } from '../dto/create-player-record.dto';
 import { UpdatePlayerRecordDto } from '../dto/update-player-record.dto';
-import { PlayerRecordRedisService } from './player-record.redis.service';
-import { GameSessionRedisService } from 'src/modules/game-session/service/game-session.redis.service';
+import { InsertPlayerRecordDto } from '../dto/insert-player-record.dto';
+import { PlayerRecord } from '../entities/player-record.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class PlayerRecordService {
+  constructor(
+    @InjectModel(PlayerRecord.name) private readonly playerRecordModel: Model<PlayerRecord>
+  ) {}
 
-  create(createPlayerRecordDto: CreatePlayerRecordDto) {
-    return 'This action adds a new playerRecord';
+  create(createPlayerRecordDto: InsertPlayerRecordDto[]) {
+    return this.playerRecordModel.insertMany(createPlayerRecordDto);
   }
 
   findAll() {
-    return `This action returns all playerRecord`;
+    return this.playerRecordModel.find().exec();
   }
 
   findOne(id: number) {

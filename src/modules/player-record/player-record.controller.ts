@@ -2,15 +2,11 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { PlayerRecordService } from './services/player-record.service';
 import { CreatePlayerRecordDto } from './dto/create-player-record.dto';
 import { UpdatePlayerRecordDto } from './dto/update-player-record.dto';
+import { InsertPlayerRecordDto } from './dto/insert-player-record.dto';
 
 @Controller('player-record')
 export class PlayerRecordController {
   constructor(private readonly playerRecordService: PlayerRecordService) {}
-
-  @Post()
-  create(@Body() createPlayerRecordDto: CreatePlayerRecordDto) {
-    return this.playerRecordService.create(createPlayerRecordDto);
-  }
 
   @Get()
   findAll() {

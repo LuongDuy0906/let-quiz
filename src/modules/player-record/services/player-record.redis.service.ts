@@ -10,21 +10,24 @@ export class PlayerRecordRedisService{
         private readonly redis: Redis
     ) {}
 
-    async addNewPlayer(playerInfo: CreatePlayerRecordDto){
+    async addNewPlayer(playerInfo: CreatePlayerRecordDto, clientId: string){
         const key = `game:room:${playerInfo.roomPin}:players`;
 
         const newPlayer = {
+            _id: clientId,
             name: playerInfo.name,
             avatar: playerInfo.avatar
         }
 
-        await this.redis.hset(key, playerInfo.name, JSON.stringify(newPlayer), 'EX', 86400);
+        await this.redis.hset(key, clientId, JSON.stringify(newPlayer));
+        await this.redis.expire(key, 86400);
+        return;
     }
 
-    async leaveRoom(playerName: string, roomPin: string){
+    async leaveRoom(clientId: string, roomPin: string){
         const key = `game:room:${roomPin}:players`;
 
-        await this.redis.hdel(key, playerName);
+        await this.redis.hdel(key, clientId);
     }
 
     async playerList(pin: string){
