@@ -11,8 +11,18 @@ export class PlayerRecordService {
     @InjectModel(PlayerRecord.name) private readonly playerRecordModel: Model<PlayerRecord>
   ) {}
 
-  create(createPlayerRecordDto: InsertPlayerRecordDto[]) {
-    return this.playerRecordModel.insertMany(createPlayerRecordDto);
+  create(playerList: any[], gameSessionId: string) {
+    const playerRecordPayload: InsertPlayerRecordDto[] = playerList.map(player => ({
+      sessionId: gameSessionId,
+      playerId: player._id,
+      playerName: player.name,
+      totalScore: 0,
+      finalRank: 0,
+      correctCount: 0,
+      wrongCount: 0
+    }));
+    
+    return this.playerRecordModel.insertMany(playerRecordPayload);
   }
 
   findAll() {

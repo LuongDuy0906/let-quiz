@@ -8,6 +8,7 @@ import { PlayerRecordRedisService } from 'src/modules/player-record/services/pla
 import { QuizService } from 'src/modules/quiz/quiz.service';
 import { PlayerRecordService } from 'src/modules/player-record/services/player-record.service';
 import { InsertPlayerRecordDto } from 'src/modules/player-record/dto/insert-player-record.dto';
+import { GameSessionStatus } from 'src/enum/gameSesstionStatus';
 
 @Injectable()
 export class GameSessionService {
@@ -30,41 +31,37 @@ export class GameSessionService {
 
     const gameSessionData = JSON.parse(gameSession);
 
-     const quizInfo = await this.quizService.findOne(gameSessionData.quizId);
+    const gameSessionStatus: GameSessionStatus = await this.gameRedisService.updateGameSessionStatus(pin);
 
-     if(!quizInfo){
+    const quizInfo = await this.quizService.findOne(gameSessionData.quizId);
+
+    if(!quizInfo){
       throw new NotFoundException("Quiz not found");
-     }
+    }
 
-     const playerList = await this.playerRecordRedisService.playerList(pin);
+    const questionInfo = quizInfo.question;
+
+    await this.gameRedisService.saveQuestion(pin, questionInfo);
+
+    const playerList = await this.playerRecordRedisService.playerList(pin);
 
     const newGameSessionData = await this.gameSessionModel.create({
       _id: gameSessionData._id,
       pin: pin,
       quizId: gameSessionData.quizId, 
       hostId: gameSessionData.hostId,
-      status: "STARTING",
+      status: gameSessionStatus,
       metrics: {
         totalPlayer: playerList.length,
         averageScore: 0
       },
       gameSettings: gameSessionData.gameSettings
     });
-
+    
     if(playerList.length > 0){
-      const playerRecordPayload: InsertPlayerRecordDto[] = playerList.map(player => ({
-        sessionId: gameSessionData._id,
-        playerId: player._id,
-        playerName: player.name,
-        totalScore: 0,
-        finalRank: 0,
-        correctCount: 0,
-        wrongCount: 0
-      }));
-      
-      await this.playerRecordService.create(playerRecordPayload);
+      await this.playerRecordService.create(playerList, gameSessionData._id);
     }
-
+  
     return newGameSessionData;
   }
 
