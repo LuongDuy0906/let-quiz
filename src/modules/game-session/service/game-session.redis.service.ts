@@ -1,3 +1,4 @@
+import { ROLE_KEY } from './../../../decorators/roles.decorator';
 import { InjectRedis } from "@nestjs-modules/ioredis";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import Redis from "ioredis";
@@ -23,23 +24,31 @@ export class GameSessionRedisService{
         return gameSessionData;
     }
 
-    async initGameSession(hostId: string, body: CreateGameSessionDto){
+    async getPin(sessionId: string){
+        const key = `game:session_id:${sessionId}`;
+        const pin = await this.redis.get(key);
+
+        return pin;
+    }
+
+    async initGameSession(hostId: string, quizId: string){
         const sessionId = new Types.ObjectId().toString();
         const pin = await this.generatePinned();
 
-        const key = `game:room:${pin}:infor`;
+        const key = `game:room:${pin}:info`;
+        const aliasKey = `game:session_id:${sessionId}`;
 
         const newGameSession = {
             _id: sessionId,
             pin: pin,
             hostId: new Types.ObjectId(hostId),
             status: GameSessionStatus.LOBBY,
-            quizId: new Types.ObjectId(body.quizId),
-            gameSettings: body.gameSettings,
+            quizId: quizId,
             questionIndex: -1,
         }
 
         await this.redis.set(key, JSON.stringify(newGameSession), 'EX', 86400);
+        await this.redis.set(aliasKey, pin, 'EX', 86400);
 
         return { pin, sessionId };
     }
@@ -97,6 +106,21 @@ export class GameSessionRedisService{
         await this.redis.set(key, JSON.stringify(gameSessionData), 'EX', 86400);
 
         return newIndex;
+    }
+
+    async verifyPin(pin: string) {
+      const key = `game:room:${pin}:infor`;
+
+      const rawRoomData = await this.redis.get(key);
+
+      if(!rawRoomData){
+        throw new NotFoundException('Mã PIN không tồn tại');
+      }
+
+      const roomData = JSON.parse(rawRoomData);
+      const roomSessionId = roomData.sessionId;
+
+      return roomSessionId;
     }
 
     async generatePinned(): Promise<string> {

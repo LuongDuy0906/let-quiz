@@ -16,8 +16,13 @@ export class GameSessionController {
   @Post('init')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  create(@Req() req, @Body() body: CreateGameSessionDto) {
-    return this.gameSessionRedisService.initGameSession(req.user.userId, body);
+  create(@Req() req, @Body() data: {quizId: string}) {
+    return this.gameSessionRedisService.initGameSession(req.user.userId, data.quizId);
+  }
+
+  @Get('verify-pin')
+  verifyPin(@Body() data: {pin: string}){
+    return this.gameSessionRedisService.verifyPin(data.pin);
   }
 
   @Post(':pin/finish')

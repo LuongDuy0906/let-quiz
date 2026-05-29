@@ -7,6 +7,9 @@ export class CreatePlayerRecordDto {
     @IsOptional()
     avatar: string;
 
-    @IsNotEmpty()
-    roomPin: string;
+    @IsOptional()
+    roomPin?: string;
+
+    @IsOptional()
+    sessionId?: string;
 }

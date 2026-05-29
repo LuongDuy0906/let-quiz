@@ -24,24 +24,56 @@ export class GameSessionGateway implements OnGatewayDisconnect {
     @SubscribeMessage('joinRoom')
     async handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() data: CreatePlayerRecordDto) {
 
-        const isRoomExist = await this.gameSessionRedisService.checkRoomPin(data.roomPin);
-        if(!isRoomExist) {
-            client.emit('error', { message: 'Phòng chơi không tồn tại' });
-            return;
+       try{
+            if(!data.roomPin && data.sessionId){
+                const savedPin = await this.gameSessionRedisService.getPin(data.sessionId);
+
+                if(!savedPin){
+                    client.emit('error', { message: 'Mã QR đã hết hạn hoặc phiên chơi không tồn tại!' });
+                    return;
+                }
+
+                data.roomPin = savedPin;
+                console.log(`[Join] Tìm thấy mã PIN phục hồi từ QR: ${data.roomPin}`);
+            }
+
+            if(!data.roomPin) {
+                client.emit('error', { message: 'Mã QR đã hết hạn hoặc phiên chơi không tồn tại!' });
+                return;
+            }
+
+            const roomData = await this.gameSessionRedisService.getGameSession(data.roomPin);
+            if (!roomData) {
+                client.emit('error', { message: 'Phòng chơi không tồn tại hoặc mã PIN sai!' });
+                return;
+            }
+
+            const roomInfo = JSON.parse(roomData);
+
+            if (data.sessionId && roomInfo._id !== data.sessionId) {
+                client.emit('error', { message: 'Mã QR đã hết hạn, vui lòng quét mã mới trên màn hình!' });
+                return;
+            }
+
+            if (roomInfo.status !== 'LOBBY') {
+                client.emit('error', { message: 'Rất tiếc! Trò chơi đã bắt đầu hoặc đã kết thúc.' });
+                return;
+            }
+
+            await this.playerRecordRedisService.addNewPlayer(data, client.id);
+            client.join(data.roomPin);
+            client.data.roomPin = data.roomPin;
+
+            const playerList = await this.playerRecordRedisService.playerList(data.roomPin);
+            this.server.to(data.roomPin).emit('playerListUpdate', playerList);
+        } catch (e) {
+            console.error('Lỗi khi học sinh join phòng:', e);
+            client.emit('error', { message: 'Đã xảy ra lỗi hệ thống, không thể vào phòng.' });
         }
-
-        client.join(data.roomPin);
-
-        client.data.roomPin = data.roomPin;
-        
-        await this.playerRecordRedisService.addNewPlayer(data, client.id);
-
-        const playersList = await this.playerRecordRedisService.playerList(data.roomPin);
-        this.server.to(data.roomPin).emit('playerListUpdate', playersList);
     }
 
     @SubscribeMessage('leaveRoom')
-    async handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: CreatePlayerRecordDto) {
+    async handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: {roomPin: string}) {
         const clientId = client.id;
         console.log(`Client ${clientId} is leaving room ${data.roomPin}`);
 
