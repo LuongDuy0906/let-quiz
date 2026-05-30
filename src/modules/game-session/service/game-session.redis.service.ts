@@ -54,7 +54,7 @@ export class GameSessionRedisService{
     }
 
     async updateGameSessionStatus(pin: string): Promise<GameSessionStatus>{
-        const key: string = `game:room:${pin}:infor`;
+        const key: string = `game:room:${pin}:info`;
         const sessionData = await this.redis.get(key);
         
         if(!sessionData){
@@ -80,7 +80,7 @@ export class GameSessionRedisService{
     }
 
     async saveQuestion(pin: string, questionInfo: any){
-        const key = `game:room:${pin}:Question`;
+        const key = `game:room:${pin}:question`;
 
         await this.redis.set(key, JSON.stringify(questionInfo.question), 'EX', 86400);
     }
@@ -91,7 +91,7 @@ export class GameSessionRedisService{
     }
 
     async updateGameSessionQuestionIndex(pin: string){  
-        const key: string = `game:room:${pin}:infor`;
+        const key: string = `game:room:${pin}:info`;
         const sessionData = await this.redis.get(key);
 
         if(!sessionData){
@@ -109,7 +109,7 @@ export class GameSessionRedisService{
     }
 
     async verifyPin(pin: string) {
-      const key = `game:room:${pin}:infor`;
+      const key = `game:room:${pin}:info`;
 
       const rawRoomData = await this.redis.get(key);
 
@@ -118,9 +118,9 @@ export class GameSessionRedisService{
       }
 
       const roomData = JSON.parse(rawRoomData);
-      const roomSessionId = roomData.sessionId;
+      const roomSessionId = roomData._id;
 
-      return roomSessionId;
+      return {sessionId: roomSessionId};
     }
 
     async generatePinned(): Promise<string> {
@@ -139,7 +139,7 @@ export class GameSessionRedisService{
     }
 
     async checkRoomPin(pin: string): Promise<boolean>{
-        const key: string = `game:room:${pin}:infor`;
+        const key: string = `game:room:${pin}:info`;
         const result: number = await this.redis.exists(key); 
 
         return result == 1;
