@@ -20,10 +20,15 @@ export class GameSessionController {
     return this.gameSessionRedisService.initGameSession(req.user.userId, data.quizId);
   }
 
-  @Get('verify-pin')
-  verifyPin(@Body() data: {pin: string}){
-    return this.gameSessionRedisService.verifyPin(data.pin);
+  @Post('verify-pin')
+  verifyPin(@Body() data: {roomPin: string}){
+    return this.gameSessionRedisService.verifyPin(data.roomPin);
   }
+
+  @Get('get-room-pin/:sessionId')
+  getRoomPin(@Param('sessionId') sessionId: string){
+    return this.gameSessionRedisService.getPin(sessionId);
+  } 
 
   @Post(':pin/finish')
   saveGameSession(@Param('pin') pin: string){
