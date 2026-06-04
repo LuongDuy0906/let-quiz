@@ -10,18 +10,21 @@ export class PlayerRecordRedisService{
         private readonly redis: Redis
     ) {}
 
-    async addNewPlayer(playerInfo: CreatePlayerRecordDto, clientId: string){
+    async addNewPlayer(playerInfo: CreatePlayerRecordDto, clientId: string, hostId: string){
         const key = `game:room:${playerInfo.roomPin}:players`;
+        console.log(hostId);
+        const isHost = (playerInfo.userId && playerInfo.userId === hostId) ? true : false;
 
         const newPlayer = {
             _id: clientId,
             name: playerInfo.name,
-            avatar: playerInfo.avatar
+            avatar: playerInfo.avatar,
+            isHost: isHost
         }
 
         await this.redis.hset(key, clientId, JSON.stringify(newPlayer));
         await this.redis.expire(key, 86400);
-        return;
+        return isHost;
     }
 
     async leaveRoom(clientId: string, roomPin: string){

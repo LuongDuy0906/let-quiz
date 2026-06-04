@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { UpdateGameSessionDto } from '../dto/update-game-session.dto';
 import { Model } from 'mongoose';
 import { GameSessionRedisService } from './game-session.redis.service';
@@ -33,13 +33,13 @@ export class GameSessionService {
 
     const gameSessionStatus: GameSessionStatus = await this.gameRedisService.updateGameSessionStatus(pin);
 
-    const quizInfo = await this.quizService.findOne(gameSessionData.quizId);
+    const quizData = await this.quizService.findOne(gameSessionData.quizId);
 
-    if(!quizInfo){
+    if(!quizData){
       throw new NotFoundException("Quiz not found");
     }
 
-    const questionInfo = quizInfo.question;
+    const questionInfo = quizData.question;
 
     await this.gameRedisService.saveQuestion(pin, questionInfo);
 
@@ -63,6 +63,33 @@ export class GameSessionService {
     }
   
     return newGameSessionData;
+  }
+
+  async findGameSession(roomPin: string){
+    if(!roomPin){
+      throw new ConflictException("Mã PIN không hợp lệ");
+    }
+
+    const rawGameSessionData = await this.gameRedisService.getGameSession(roomPin);
+
+    if(!rawGameSessionData){
+      throw new NotFoundException("Phiên chơi không tồn tại");
+    }
+
+    const gameSessionData = JSON.parse(rawGameSessionData);
+
+    const quizInfo = await this.quizService.findOne(gameSessionData.quizId);
+
+    return {
+      quizInfo: quizInfo,
+      roomPin: roomPin
+    };
+  }
+
+  async verifyRoomPin(roomPin: string): Promise<boolean | null>{
+    const isRoomPinExist = await this.gameRedisService.checkRoomPin(roomPin);
+
+    return isRoomPinExist;
   }
 
   findAll() {

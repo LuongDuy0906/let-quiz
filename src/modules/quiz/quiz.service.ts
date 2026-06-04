@@ -43,7 +43,9 @@ export class QuizService {
   }                                                           
 
   async findOne(id: string) {
-    return await this.quizModel.findById(id).select('title image question tag status').exec();
+    const quizInfo = await this.quizModel.findById(id).select('title image question tag status').exec();
+
+    return quizInfo;
   }
 
   async update(id: string, userId: string, updateQuizDto: UpdateQuizDto) {

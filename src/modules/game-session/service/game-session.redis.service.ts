@@ -5,6 +5,7 @@ import Redis from "ioredis";
 import { Types } from "mongoose";
 import { CreateGameSessionDto } from "../dto/create-game-session.dto";
 import { GameSessionStatus, GameState } from "src/enum/gameSesstionStatus";
+import { GameSettings } from '../dto/game-settings/game-settings.dto';
 
 @Injectable()
 export class GameSessionRedisService{
@@ -17,18 +18,7 @@ export class GameSessionRedisService{
         const key: string = `game:room:${pin}:info`;
         const gameSessionData = await this.redis.get(key);
 
-        if(!gameSessionData){
-            throw new NotFoundException("Game session not found");
-        }
-
         return gameSessionData;
-    }
-
-    async getPin(sessionId: string){
-        const key = `game:session_id:${sessionId}`;
-        const pin = await this.redis.get(key);
-
-        return pin;
     }
 
     async initGameSession(hostId: string, quizId: string){
@@ -45,6 +35,11 @@ export class GameSessionRedisService{
             status: GameSessionStatus.LOBBY,
             quizId: quizId,
             questionIndex: -1,
+            gameSettings: {
+                showLeaderboard: true,
+                shuffleQuestions: false,
+                shuffleOptions: false
+            }
         }
 
         await this.redis.set(key, JSON.stringify(newGameSession), 'EX', 86400);
@@ -86,7 +81,7 @@ export class GameSessionRedisService{
     }
 
     async getQuestion(pin: string){
-        const key = `game:room:${pin}:Question`;
+        const key = `game:room:${pin}:question`;
         return await this.redis.get(key);
     }
 
@@ -108,19 +103,40 @@ export class GameSessionRedisService{
         return newIndex;
     }
 
-    async verifyPin(pin: string) {
-      const key = `game:room:${pin}:info`;
+    async cleanUpFullRoom(roomPin: string) {
+        const roomKey = `game:room:${roomPin}:info`;
+        const playerKey = `game:room:${roomPin}:players`;
+        const questionKey = `game:room:${roomPin}:question`;
+        const leaderboardKey = `game:room:${roomPin}:leaderboard`;
+        
+        await Promise.all([
+            this.redis.del(roomKey),
+            this.redis.del(playerKey),
+            this.redis.del(questionKey),
+            this.redis.del(leaderboardKey)
+        ])
 
-      const rawRoomData = await this.redis.get(key);
+        return;
+    }
 
-      if(!rawRoomData){
-        throw new NotFoundException('Mã PIN không tồn tại');
-      }
+    async updateGameSessionSettings(roomPin: string, newSettings: GameSettings){
+        const rawGameSessionData = await this.getGameSession(roomPin);
 
-      const roomData = JSON.parse(rawRoomData);
-      const roomSessionId = roomData._id;
+        if(!rawGameSessionData){
+            throw new NotFoundException('Phong choi khong ton tai')
+        }
 
-      return {sessionId: roomSessionId};
+        const gameSessionData = JSON.parse(rawGameSessionData);
+
+        gameSessionData.settings = newSettings;
+
+        const key = `game:room:${roomPin}:info`;
+
+        await this.redis.set(key, JSON.stringify(gameSessionData), 'EX', 86400);
+
+        return {
+            message: 'Cap nhat cai dat thanh cong'
+        }
     }
 
     async generatePinned(): Promise<string> {

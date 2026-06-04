@@ -5,6 +5,7 @@ import { UpdateGameSessionDto } from './dto/update-game-session.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { GameSessionRedisService } from './service/game-session.redis.service';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { GameSettings } from './dto/game-settings/game-settings.dto';
 
 @Controller('game-session')
 export class GameSessionController {
@@ -20,14 +21,14 @@ export class GameSessionController {
     return this.gameSessionRedisService.initGameSession(req.user.userId, data.quizId);
   }
 
-  @Post('verify-pin')
-  verifyPin(@Body() data: {roomPin: string}){
-    return this.gameSessionRedisService.verifyPin(data.roomPin);
+  @Get('verify-pin/:roomPin')
+  verifyPin(@Param('roomPin') roomPin: string){
+    return this.gameSessionService.verifyRoomPin(roomPin);
   }
 
-  @Get('get-room-pin/:sessionId')
-  getRoomPin(@Param('sessionId') sessionId: string){
-    return this.gameSessionRedisService.getPin(sessionId);
+  @Get('get-game-session-and-room-pin/:roomPin')
+  getGameSession(@Param('roomPin') roomPin: string){
+    return this.gameSessionService.findGameSession(roomPin);
   } 
 
   @Post(':pin/finish')
@@ -45,9 +46,9 @@ export class GameSessionController {
     return this.gameSessionService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateGameSessionDto: UpdateGameSessionDto) {
-    return this.gameSessionService.update(+id, updateGameSessionDto);
+  @Patch(':roomPin/settings')
+  updateSettingForGameSession(@Param('roomPin') roomPin: string, @Body() settings: GameSettings){
+    return this.gameSessionRedisService.updateGameSessionSettings(roomPin, settings);
   }
 
   @Delete(':id')
