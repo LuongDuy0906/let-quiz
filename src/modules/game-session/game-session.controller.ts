@@ -1,3 +1,4 @@
+import { HttpCode, HttpStatus } from '@nestjs/common';
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { GameSessionService } from './service/game-session.service';
 import { CreateGameSessionDto } from './dto/create-game-session.dto';
@@ -6,12 +7,15 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { GameSessionRedisService } from './service/game-session.redis.service';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { GameSettings } from './dto/game-settings/game-settings.dto';
+import { StartGameDTO } from './dto/start-game-info.dto';
+import { GameSessionGateway } from './game-session.gateway';
 
 @Controller('game-session')
 export class GameSessionController {
   constructor(
     private readonly gameSessionService: GameSessionService,
-    private readonly gameSessionRedisService: GameSessionRedisService
+    private readonly gameSessionRedisService: GameSessionRedisService,
+    private readonly gameSessionGatewway: GameSessionGateway
   ) {}
 
   @Post('init')
@@ -47,12 +51,19 @@ export class GameSessionController {
   }
 
   @Patch(':roomPin/settings')
-  updateSettingForGameSession(@Param('roomPin') roomPin: string, @Body() settings: GameSettings){
-    return this.gameSessionRedisService.updateGameSessionSettings(roomPin, settings);
+  @UseGuards(JwtAuthGuard)
+  updateSettingForGameSession(@Req() req, @Param('roomPin') roomPin: string, @Body() settings: GameSettings){
+    return this.gameSessionRedisService.updateGameSessionSettings(req.user.userId, roomPin, settings);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.gameSessionService.remove(+id);
+  }
+
+  @Post('start')
+  @HttpCode(HttpStatus.OK)
+  async startGameSession(@Body() data: StartGameDTO){
+    return await this.gameSessionGatewway.triggerStartGame(data);
   }
 }

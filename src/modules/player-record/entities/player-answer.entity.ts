@@ -11,10 +11,4 @@ export class PlayerAnswer{
 
     @Prop({required: true})
     isCorrect: boolean;
-
-    @Prop({ required: true })
-    scoreEarned: number;
-
-    @Prop()
-    responseTimeMs: number;
 }
