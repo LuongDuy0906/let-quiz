@@ -1,14 +1,14 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UpdateGameSessionDto } from '../dto/update-game-session.dto';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { GameSessionRedisService } from './game-session.redis.service';
 import { GameSession, GameSessionDocument } from '../entities/game-session.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { PlayerRecordRedisService } from 'src/modules/player-record/services/player-record.redis.service';
 import { QuizService } from 'src/modules/quiz/quiz.service';
 import { PlayerRecordService } from 'src/modules/player-record/services/player-record.service';
-import { InsertPlayerRecordDto } from 'src/modules/player-record/dto/insert-player-record.dto';
 import { GameSessionStatus } from 'src/enum/gameSesstionStatus';
+import { PlayerRecord, PlayerRecordDocument } from 'src/modules/player-record/entities/player-record.entity';
 
 @Injectable()
 export class GameSessionService {
@@ -19,7 +19,10 @@ export class GameSessionService {
     private readonly playerRecordService: PlayerRecordService,
 
     @InjectModel(GameSession.name)
-    private readonly gameSessionModel: Model<GameSessionDocument>
+    private readonly gameSessionModel: Model<GameSessionDocument>,
+
+    @InjectModel(PlayerRecord.name)
+    private readonly playerRecordModel: Model<PlayerRecordDocument>
   ) {}
   
   async create(pin: string) {
@@ -92,19 +95,66 @@ export class GameSessionService {
     return isRoomPinExist;
   }
 
-  findAll() {
-    return `This action returns all gameSession`;
-  }
+  async saveSessionResultsToMongo(roomPin: string) {
+        const rawRoomData = await this.gameRedisService.getGameSession(roomPin);
 
-  findOne(id: number) {
-    return `This action returns a #${id} gameSession`;
-  }
+        if (!rawRoomData){
+          throw new NotFoundException('Không tìm thấy thông tin phiên chơi');
+        }
 
-  update(id: number, updateGameSessionDto: UpdateGameSessionDto) {
-    return `This action updates a #${id} gameSession`;
-  }
+        const roomInfo = JSON.parse(rawRoomData);
+        const sessionId = new Types.ObjectId(roomInfo._id); 
 
-  remove(id: number) {
-    return `This action removes a #${id} gameSession`;
-  }
+        await this.gameSessionModel.findByIdAndUpdate(sessionId, { status: 'COMPLETED' });
+
+        const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 100);
+
+        const bulkUpdateOperations: any[] = [];
+        let rankCounter = 1;
+
+        for (const player of finalLeaderboard) {
+            const { clientId, score } = player;
+            const playerAnswersKey = `game:room:${roomPin}:answer:${clientId}`;
+            const allAnswersRaw = await this.playerRecordRedisService['redis'].hgetall(playerAnswersKey);
+
+            const responseHistory: any[] = [];
+            let correctCount = 0;
+            let wrongCount = 0;
+
+            for (const [questionId, answerString] of Object.entries(allAnswersRaw)) {
+                const savedAnswer = JSON.parse(answerString);
+                
+                responseHistory.push({
+                    questionId: questionId,
+                    answerId: savedAnswer.answerId,
+                    isCorrect: savedAnswer.isCorrect
+                });
+
+                if (savedAnswer.isCorrect) correctCount++;
+                else wrongCount++;
+            }
+
+            bulkUpdateOperations.push({
+                updateOne: {
+                    filter: { sessionId: sessionId, playerId: clientId },
+                    update: {
+                        $set: {
+                            totalScore: score,
+                            finalRank: rankCounter++,
+                            correctCount: correctCount,
+                            wrongCount: wrongCount,
+                            responseHistory: responseHistory
+                        }
+                    }
+                }
+            });
+        }
+
+        if (bulkUpdateOperations.length > 0) {
+            await this.playerRecordModel.bulkWrite(bulkUpdateOperations);
+            console.log(`[Database] Đã cập nhật kết quả thành công cho ${bulkUpdateOperations.length} học sinh.`);
+        }
+
+        await this.gameRedisService.cleanUpFullRoom(roomPin);
+    }
 }

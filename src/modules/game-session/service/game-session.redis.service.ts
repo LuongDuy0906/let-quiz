@@ -1,6 +1,6 @@
 import { ROLE_KEY } from './../../../decorators/roles.decorator';
 import { InjectRedis } from "@nestjs-modules/ioredis";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import Redis from "ioredis";
 import { Types } from "mongoose";
 import { CreateGameSessionDto } from "../dto/create-game-session.dto";
@@ -119,7 +119,7 @@ export class GameSessionRedisService{
         return;
     }
 
-    async updateGameSessionSettings(roomPin: string, newSettings: GameSettings){
+    async updateGameSessionSettings(userId: string, roomPin: string, newSettings: GameSettings){
         const rawGameSessionData = await this.getGameSession(roomPin);
 
         if(!rawGameSessionData){
@@ -127,6 +127,10 @@ export class GameSessionRedisService{
         }
 
         const gameSessionData = JSON.parse(rawGameSessionData);
+
+        if(gameSessionData.hostId !== userId){
+            throw new ForbiddenException('Chỉ host mới được thay đổi cài đặt');
+        }
 
         gameSessionData.settings = newSettings;
 

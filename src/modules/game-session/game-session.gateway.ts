@@ -231,13 +231,14 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             const rawRoomData = await this.gameSessionRedisService.getGameSession(roomPin);
             
             let finalScore = 0;
+            let isCorrect: boolean = false;
 
             if (rawQuestion && rawRoomData) {
                 const questions = JSON.parse(rawQuestion);
                 const roomInfo = JSON.parse(rawRoomData);
                 const currentQuestion = questions[roomInfo.questionIndex];
 
-                const isCorrect = currentQuestion.options.find((opt: any) => opt.id === data.answerId)?.isCorrect;
+                isCorrect = currentQuestion.options.find((opt: any) => opt.id === data.answerId)?.isCorrect;
 
                 if (isCorrect) {
                     finalScore = clientScore;
@@ -248,6 +249,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
 
             await this.playerRecordRedisService.playerAnswer({
                 ...data,
+                isCorrect,
                 score: finalScore 
             } as any, roomPin, client.id);
 

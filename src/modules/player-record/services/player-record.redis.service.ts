@@ -73,12 +73,13 @@ export class PlayerRecordRedisService {
         return leaderboardData;
     }
 
-    async playerAnswer(playerAnswerInfo: PlayerAnswerDto & { score: number }, roomPin: string, clientId: string) {
+    async playerAnswer(playerAnswerInfo: PlayerAnswerDto & { score: number, isCorrect: boolean }, roomPin: string, clientId: string) {
         const key = `game:room:${roomPin}:answer:${playerAnswerInfo.questionId}`;
 
         const answerPayload = {
             answerId: playerAnswerInfo.answerId,
-            score: playerAnswerInfo.score
+            score: playerAnswerInfo.score,
+            isCorrect: playerAnswerInfo.isCorrect,
         };
 
         await this.redis.hset(key, clientId, JSON.stringify(answerPayload));
@@ -92,5 +93,11 @@ export class PlayerRecordRedisService {
     async getCurrentAnswerCount(roomPin: string, questionId: string) {
         const key = `game:room:${roomPin}:answer:${questionId}`;
         return this.redis.hlen(key);
+    }
+
+    async getAllPlayersAnswer(roomPin: string, clientId: string){
+        const playerAnswersKey = `game:room:${roomPin}:answer:${clientId}`;
+
+        return await this.redis.hgetall(playerAnswersKey);
     }
 }

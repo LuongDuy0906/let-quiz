@@ -23,7 +23,7 @@ export class GameSession{
 
     @Prop({required: true})
     pin: string;
-    
+
     @Prop({type: [GameSettings], default: () => ({})})
     gameSettings: GameSettings
 

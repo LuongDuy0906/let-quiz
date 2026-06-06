@@ -40,30 +40,15 @@ export class GameSessionController {
     return this.gameSessionService.create(pin);
   }
 
-  @Get()
-  findAll() {
-    return this.gameSessionService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.gameSessionService.findOne(+id);
-  }
-
   @Patch(':roomPin/settings')
   @UseGuards(JwtAuthGuard)
   updateSettingForGameSession(@Req() req, @Param('roomPin') roomPin: string, @Body() settings: GameSettings){
     return this.gameSessionRedisService.updateGameSessionSettings(req.user.userId, roomPin, settings);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.gameSessionService.remove(+id);
-  }
-
   @Post('start')
   @HttpCode(HttpStatus.OK)
   async startGameSession(@Body() data: StartGameDTO){
-    return await this.gameSessionGatewway.triggerStartGame(data);
+    await this.gameSessionGatewway.triggerStartGame(data);
   }
 }
