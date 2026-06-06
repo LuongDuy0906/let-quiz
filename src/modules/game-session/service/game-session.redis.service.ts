@@ -1,9 +1,7 @@
-import { ROLE_KEY } from './../../../decorators/roles.decorator';
 import { InjectRedis } from "@nestjs-modules/ioredis";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import Redis from "ioredis";
 import { Types } from "mongoose";
-import { CreateGameSessionDto } from "../dto/create-game-session.dto";
 import { GameSessionStatus, GameState } from "src/enum/gameSesstionStatus";
 import { GameSettings } from '../dto/game-settings/game-settings.dto';
 
@@ -26,7 +24,6 @@ export class GameSessionRedisService{
         const pin = await this.generatePinned();
 
         const key = `game:room:${pin}:info`;
-        const aliasKey = `game:session_id:${sessionId}`;
 
         const newGameSession = {
             _id: sessionId,
@@ -43,7 +40,6 @@ export class GameSessionRedisService{
         }
 
         await this.redis.set(key, JSON.stringify(newGameSession), 'EX', 86400);
-        await this.redis.set(aliasKey, pin, 'EX', 86400);
 
         return { pin, sessionId };
     }
@@ -78,6 +74,7 @@ export class GameSessionRedisService{
         const key = `game:room:${pin}:question`;
 
         await this.redis.set(key, JSON.stringify(questionInfo.question), 'EX', 86400);
+        return;
     }
 
     async getQuestion(pin: string){
@@ -123,7 +120,7 @@ export class GameSessionRedisService{
         const rawGameSessionData = await this.getGameSession(roomPin);
 
         if(!rawGameSessionData){
-            throw new NotFoundException('Phong choi khong ton tai')
+            throw new NotFoundException('Phòng chơi không tồn tại')
         }
 
         const gameSessionData = JSON.parse(rawGameSessionData);
@@ -132,7 +129,7 @@ export class GameSessionRedisService{
             throw new ForbiddenException('Chỉ host mới được thay đổi cài đặt');
         }
 
-        gameSessionData.settings = newSettings;
+        gameSessionData.gameSettings = newSettings;
 
         const key = `game:room:${roomPin}:info`;
 

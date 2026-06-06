@@ -7,6 +7,7 @@ import { GameSession, GameSessionSchema } from './entities/game-session.entity';
 import { GameSessionGateway } from './game-session.gateway';
 import { PlayerRecordModule } from '../player-record/player-record.module';
 import { QuizModule } from '../quiz/quiz.module';
+import { PlayerRecord, PlayerRecordSchema } from '../player-record/entities/player-record.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,12 @@ import { QuizModule } from '../quiz/quiz.module';
       {
         name: GameSession.name,
         schema: GameSessionSchema
+      }
+    ]),
+    MongooseModule.forFeature([
+      {
+        name: PlayerRecord.name,
+        schema: PlayerRecordSchema
       }
     ]),
     PlayerRecordModule,

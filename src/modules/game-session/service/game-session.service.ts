@@ -29,22 +29,21 @@ export class GameSessionService {
     const gameSession = await this.gameRedisService.getGameSession(pin);
 
     if(!gameSession){
-      throw new NotFoundException("Game session not found");
+      throw new NotFoundException("Phòng chơi không tôn tại");
     }
 
     const gameSessionData = JSON.parse(gameSession);
 
     const gameSessionStatus: GameSessionStatus = await this.gameRedisService.updateGameSessionStatus(pin);
+    console.log(gameSessionStatus)
 
     const quizData = await this.quizService.findOne(gameSessionData.quizId);
 
     if(!quizData){
-      throw new NotFoundException("Quiz not found");
+      throw new NotFoundException("Không tìm thấy bộ đề");
     }
 
-    const questionInfo = quizData.question;
-
-    await this.gameRedisService.saveQuestion(pin, questionInfo);
+    await this.gameRedisService.saveQuestion(pin, quizData);
 
     const playerList = await this.playerRecordRedisService.playerList(pin);
 
