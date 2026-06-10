@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './service/auth.service';
+import { AuthService } from './services/auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from 'src/config/jwt.config';
 import { ConfigModule } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../user/user.module';
-import { TokenService } from './service/token.service';
+import { TokenService } from './services/token.service';
 import refreshTokenConfig from 'src/config/refresh-token.config';
 import { RefreshJwtStrategy } from './strategies/refresh.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../user/entities/user.entity';
 import googleOauthConfig from 'src/config/google-oauth.config';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { RedisTokenService } from './service/token.redis.service';
+import { RedisTokenService } from './services/token.redis.service';
 
 @Module({
   imports: [

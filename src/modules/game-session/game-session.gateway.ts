@@ -1,9 +1,9 @@
 import { ConnectedSocket, MessageBody, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { CreatePlayerRecordDto } from "../player-record/dto/create-player-record.dto";
 import { PlayerRecordRedisService } from "../player-record/services/player-record.redis.service";
-import { GameSessionRedisService } from "./service/game-session.redis.service";
+import { GameSessionRedisService } from "./services/game-session.redis.service";
 import { Server, Socket } from "socket.io";
-import { GameSessionService } from "./service/game-session.service";
+import { GameSessionService } from "./services/game-session.service";
 import { NotFoundException } from "@nestjs/common";
 import { StartGameDTO } from "./dto/start-game-info.dto";
 import { PlayerAnswerDto } from "../player-record/dto/save-player-answer.dto";

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { GameSessionService } from './service/game-session.service';
+import { GameSessionService } from './services/game-session.service';
 import { GameSessionController } from './game-session.controller';
-import { GameSessionRedisService } from './service/game-session.redis.service';
+import { GameSessionRedisService } from './services/game-session.redis.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GameSession, GameSessionSchema } from './entities/game-session.entity';
 import { GameSessionGateway } from './game-session.gateway';

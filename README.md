@@ -1,98 +1,247 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🎯 LetQuiz - A Quiz Game Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS backend for an interactive quiz game platform with real-time multiplayer game sessions, user authentication, and comprehensive quiz management.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+- **Authentication & Authorization**
+  - JWT-based authentication
+  - Google OAuth 2.0 integration
+  - Role-based access control (RBAC)
+  - Refresh token strategy
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Quiz Management**
+  - Create, update, delete quizzes
+  - Support for multiple question types
+  - Tag-based quiz categorization
+  - Quiz status tracking (draft, published, archived)
 
-## Project setup
+- **Real-time Game Sessions**
+  - WebSocket-based multiplayer game sessions
+  - Real-time player tracking
+  - Game metrics and statistics
+  - Configurable game settings
 
-```bash
-$ npm install
-```
+- **Player Records & Leaderboard**
+  - Track player performance
+  - Record game history
+  - Calculate player statistics
 
-## Compile and run the project
+- **File Management**
+  - Cloud-based file upload via Cloudinary
+  - Image optimization and delivery
 
-```bash
-# development
-$ npm run start
+- **Email Notifications**
+  - Password reset emails
+  - Game notifications
+  - Nodemailer integration
 
-# watch mode
-$ npm run start:dev
+- **Caching & Performance**
+  - Redis-based caching
+  - Session management
+  - Data optimization
 
-# production mode
-$ npm run start:prod
-```
+## 📋 Prerequisites
 
-## Run tests
+- Node.js >= 18.x
+- npm or yarn
+- MongoDB (Atlas or local)
+- Redis (Upstash or local)
+- Cloudinary account (optional)
+- Google OAuth credentials (optional)
 
-```bash
-# unit tests
-$ npm run test
+## 🛠️ Setup Instructions
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 1. Clone & Install Dependencies
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+git clone <repository-url>
+cd let-quiz
+npm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 2. Environment Configuration
 
-## Resources
+Copy `.env.example` to `.env` and fill in your values:
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+cp .env.example .env
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Required environment variables:
+- `PORT` - Server port (default: 3000)
+- `NODE_ENV` - Environment (development/production/test)
+- `MONGODB_URI` - MongoDB connection string
+- `REDIS_URL` - Redis connection URL
+- `JWT_SECRET` - JWT signing secret
+- `JWT_EXPIRATION_TIME` - JWT expiration (e.g., 15m)
+- `REFRESH_TOKEN_SECRET` - Refresh token secret
+- `REFRESH_TOKEN_EXPIRATION_TIME` - Refresh token expiration (e.g., 7d)
 
-## Support
+Optional:
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - Google OAuth
+- `CLOUDINARY_*` - File upload credentials
+- `MAIL_*` - Email service credentials
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### 3. Run the Application
 
-## Stay in touch
+**Development:**
+```bash
+npm run start:dev
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+**Production:**
+```bash
+npm run build
+npm run start:prod
+```
 
-## License
+**Debug Mode:**
+```bash
+npm run start:debug
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 🧪 Testing
+
+```bash
+# Unit tests
+npm run test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:cov
+
+# E2E tests
+npm run test:e2e
+```
+
+## 📚 API Documentation
+
+Swagger API documentation is available at:
+```
+http://localhost:3000/api/document
+```
+
+## 🏗️ Project Structure
+
+```
+src/
+├── config/                 # Application configuration
+│   ├── validation.ts      # Environment validation
+│   ├── jwt.config.ts
+│   ├── refresh-token.config.ts
+│   └── google-oauth.config.ts
+├── common/                # Shared utilities & infrastructure
+│   ├── decorators/        # Custom decorators (@Roles, etc.)
+│   ├── filters/           # Exception filters
+│   ├── guards/            # Auth guards (JWT, Roles, etc.)
+│   ├── interceptors/      # HTTP interceptors
+│   ├── pipes/             # Custom pipes
+│   ├── exceptions/        # Custom exception classes
+│   ├── constants.ts       # App-wide constants
+│   └── utils/             # Utility functions
+├── enums/                 # Enums (UserRole, QuizStatus, etc.)
+├── modules/               # Feature modules
+│   ├── auth/              # Authentication module
+│   │   ├── services/
+│   │   ├── strategies/
+│   │   ├── guards/
+│   │   ├── dto/
+│   │   └── auth.controller.ts
+│   ├── user/              # User management
+│   ├── quiz/              # Quiz management
+│   ├── game-session/      # Real-time game sessions (WebSocket)
+│   ├── player-record/     # Player statistics & history
+│   ├── mail/              # Email service
+│   └── cloudinary/        # File upload service
+├── app.module.ts          # Root module
+└── main.ts                # Bootstrap file
+```
+
+## 🔐 Authentication Flow
+
+### JWT Authentication
+```
+1. User logs in with email/password
+2. Server validates credentials
+3. Returns access token + refresh token
+4. Client stores tokens locally
+5. Use access token in Authorization header for protected routes
+```
+
+### Google OAuth
+```
+1. User clicks "Login with Google"
+2. Redirected to Google OAuth consent screen
+3. Google redirects back with authorization code
+4. Server exchanges code for user info
+5. Auto-creates/updates user account
+6. Returns JWT tokens
+```
+
+## 🎮 Real-time Game Sessions
+
+WebSocket connection for multiplayer game sessions:
+```
+ws://localhost:3000/game-session
+```
+
+Events:
+- `createSession` - Create new game session
+- `joinSession` - Join existing session
+- `submitAnswer` - Submit answer during game
+- `gameEnded` - Broadcast when game ends
+
+## 📊 Database Schema Overview
+
+### Collections:
+- **users** - User accounts & profiles
+- **quizzes** - Quiz data
+- **game-sessions** - Active/completed game sessions
+- **player-records** - Player performance records
+
+## 🛡️ Security Features
+
+- CORS enabled
+- Input validation & sanitization
+- JWT token-based authentication
+- Role-based access control
+- Exception filtering & error handling
+- Environment validation on startup
+
+## 📝 Code Style
+
+- ESLint configuration
+- Prettier code formatting
+- TypeScript strict mode
+- NestJS best practices
+
+Commands:
+```bash
+# Lint
+npm run lint
+
+# Format code
+npm run format
+```
+
+## 🤝 Contributing
+
+1. Create feature branch (`git checkout -b feature/amazing-feature`)
+2. Commit changes (`git commit -m 'Add amazing feature'`)
+3. Push to branch (`git push origin feature/amazing-feature`)
+4. Open Pull Request
+
+## 📄 License
+
+UNLICENSED
+
+## 📧 Support
+
+For issues or questions, please open an issue in the repository.
+
+---
+
+**Built with ❤️ using NestJS**

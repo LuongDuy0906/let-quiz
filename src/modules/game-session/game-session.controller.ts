@@ -1,10 +1,10 @@
 import { HttpCode, HttpStatus } from '@nestjs/common';
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
-import { GameSessionService } from './service/game-session.service';
+import { GameSessionService } from './services/game-session.service';
 import { CreateGameSessionDto } from './dto/create-game-session.dto';
 import { UpdateGameSessionDto } from './dto/update-game-session.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
-import { GameSessionRedisService } from './service/game-session.redis.service';
+import { GameSessionRedisService } from './services/game-session.redis.service';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { GameSettings } from './dto/game-settings/game-settings.dto';
 import { StartGameDTO } from './dto/start-game-info.dto';
