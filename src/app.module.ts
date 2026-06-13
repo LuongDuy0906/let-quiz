@@ -11,6 +11,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { MailModule } from './modules/mail/mail.module';
 import { GameSessionModule } from './modules/game-session/game-session.module';
 import { PlayerRecordModule } from './modules/player-record/player-record.module';
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PlayerRecordModule } from './modules/player-record/player-record.module
     MailModule,
     GameSessionModule,
     PlayerRecordModule,
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

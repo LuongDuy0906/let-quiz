@@ -18,6 +18,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
     server!: Server;
 
     private activeTimers = new Map<string, NodeJS.Timeout>();
+    private activeCountdowns = new Map<string, NodeJS.Timeout>();
 
     constructor(
         private readonly playerRecordRedisService: PlayerRecordRedisService,
@@ -125,9 +126,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 message: 'Trò chơi đã bắt đầu' 
             });
 
-            setTimeout(async () => {
-                await this.internalNextQuestion(data.roomPin);
-            }, 3000);
+            await this.internalNextQuestion(data.roomPin);
 
         } catch (e) {
             console.error('Lỗi nghiêm trọng khi kích hoạt luồng phát tín hiệu Start Game:', e);
@@ -138,8 +137,12 @@ export class GameSessionGateway implements OnGatewayDisconnect {
         if (!roomPin) return;
 
         try {
+            if (this.activeCountdowns.has(roomPin)) {
+                clearInterval(this.activeCountdowns.get(roomPin)!);
+                this.activeCountdowns.delete(roomPin);
+            }
+
             const currentIndex = await this.gameSessionRedisService.updateGameSessionQuestionIndex(roomPin);
-            
             const rawRoomData = await this.gameSessionRedisService.getGameSession(roomPin);
             const rawQuestion = await this.gameSessionRedisService.getQuestion(roomPin);
 
@@ -157,35 +160,44 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             }
 
             const currentQuestion = questions[currentIndex];
-
+            
             let countdown = 3;
+
+            this.server.to(roomPin).emit('countdown', { second: countdown });
+            countdown--;
+
             const countdownTimer = setInterval(async () => {
                 if (countdown > 0) {
                     this.server.to(roomPin).emit('countdown', { second: countdown });
                     countdown--;
                 } else {
                     clearInterval(countdownTimer);
+                    this.activeCountdowns.delete(roomPin);
 
-                    let optionsData = currentQuestion.option.map((opt: any) => ({ id: opt.id, text: opt.text }));
+                    let optionsData = currentQuestion.option.map((opt: any) => ({ id: opt._id, text: opt.content }));
 
                     if (settings?.shuffleOptions) {
                         optionsData = optionsData.sort(() => Math.random() - 0.5);
                     }
 
+                    const questionDuration = Number(currentQuestion.duration) || 30;
+
                     const safeQuestionForPlayer = {
                         questionId: currentQuestion._id,
-                        title: currentQuestion.title,
+                        title: currentQuestion.content,
                         options: optionsData, 
-                        duration: currentQuestion.duration,
+                        duration: questionDuration,
                         currentQuestionIndex: currentIndex + 1,
                         totalQuestions: questions.length
                     };
 
                     this.server.to(roomPin).emit('questionRecived', safeQuestionForPlayer);
 
-                    this.startQuestionTimer(roomPin, currentQuestion.duration, settings);
+                    this.startQuestionTimer(roomPin, questionDuration, settings);
                 }
             }, 1000);
+
+            this.activeCountdowns.set(roomPin, countdownTimer);
 
         } catch (error) {
             console.error('Lỗi sập luồng xử lý câu hỏi:', error);
@@ -193,10 +205,11 @@ export class GameSessionGateway implements OnGatewayDisconnect {
     }
 
     private startQuestionTimer(roomPin: string, duration: number, settings: any) {
-        let timerLeft = duration;
+        let timerLeft = duration > 0 ? duration : 30;
 
         if (this.activeTimers.has(roomPin)) {
             clearInterval(this.activeTimers.get(roomPin)!);
+            this.activeTimers.delete(roomPin);
         }
 
         const questionTimer = setInterval(async () => {
@@ -207,7 +220,10 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 clearInterval(questionTimer);
                 this.activeTimers.delete(roomPin); 
 
-                await this.handleQuestionEnd(roomPin, settings);
+                const rawRoomData = await this.gameSessionRedisService.getGameSession(roomPin);
+                const currentSettings = rawRoomData ? JSON.parse(rawRoomData).gameSettings : settings;
+
+                await this.handleQuestionEnd(roomPin, currentSettings);
             }
         }, 1000);
 
@@ -238,7 +254,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 const roomInfo = JSON.parse(rawRoomData);
                 const currentQuestion = questions[roomInfo.questionIndex];
 
-                isCorrect = currentQuestion.options.find((opt: any) => opt.id === data.answerId)?.isCorrect;
+                isCorrect = currentQuestion.option.find((opt: any) => opt._id === data.answerId)?.isCorrect;
 
                 if (isCorrect) {
                     finalScore = clientScore;
@@ -256,7 +272,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             const currentAnsweredCount = await this.playerRecordRedisService.getCurrentAnswerCount(roomPin, data.questionId);
 
             const playerList = await this.playerRecordRedisService.playerList(roomPin);
-            const totalPlayers = playerList.filter((p: any) => !p.isHost).length;
+            const totalPlayers = playerList.length;
 
             this.server.to(roomPin).emit('playerAnsweredUpdate', { 
                 answeredCount: currentAnsweredCount, 

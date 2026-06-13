@@ -14,7 +14,7 @@ export class Question{
     questionType: QuestionType;
 
     @Prop({type: [Option], default: []})
-    option: Option[];
+    options: Option[];
 
     @Prop({default: 30})
     timeLimit: number;
