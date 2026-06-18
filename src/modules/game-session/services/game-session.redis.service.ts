@@ -135,9 +135,7 @@ export class GameSessionRedisService{
 
         await this.redis.set(key, JSON.stringify(gameSessionData), 'EX', 86400);
 
-        return {
-            message: 'Cap nhat cai dat thanh cong'
-        }
+        return;
     }
 
     async generatePinned(): Promise<string> {

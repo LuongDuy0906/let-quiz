@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
-import { GameSettings } from "./game-setting.entity";
 import { GameMetrics } from "./game-metrics.entity";
 import { GameSessionStatus } from "src/enum/gameSesstionStatus";
 
@@ -23,9 +22,6 @@ export class GameSession{
 
     @Prop({required: true})
     pin: string;
-
-    @Prop({type: [GameSettings], default: () => ({})})
-    gameSettings: GameSettings
 
     @Prop({required: true, enum: GameSessionStatus, default: GameSessionStatus.LOBBY})
     status: GameSessionStatus;

@@ -32,7 +32,7 @@ export class Quiz {
     ratingCount: number;
 
     @Prop({type: [Question], default: []})
-    question: Question[];
+    questions: Question[];
 
     @Prop({default: ''})
     description: string;
@@ -44,5 +44,5 @@ export class Quiz {
 export const QuizSchema = SchemaFactory.createForClass(Quiz);
 
 QuizSchema.virtual('totalQuestions').get(function() {
-  return this.question ? this.question.length : 0;
+  return this.questions ? this.questions.length : 0;
 });

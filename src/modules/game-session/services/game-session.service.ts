@@ -47,7 +47,7 @@ export class GameSessionService {
 
     const playerList = await this.playerRecordRedisService.playerList(pin);
 
-    const newGameSessionData = await this.gameSessionModel.create({
+    await this.gameSessionModel.create({
       _id: gameSessionData._id,
       pin: pin,
       quizId: gameSessionData.quizId, 
@@ -57,14 +57,13 @@ export class GameSessionService {
         totalPlayer: playerList.length,
         averageScore: 0
       },
-      gameSettings: gameSessionData.gameSettings
     });
     
     if(playerList.length > 0){
       await this.playerRecordService.create(playerList, gameSessionData._id);
     }
   
-    return newGameSessionData;
+    return gameSessionData;
   }
 
   async findGameSession(roomPin: string){
