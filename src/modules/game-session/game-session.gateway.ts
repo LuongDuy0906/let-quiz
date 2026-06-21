@@ -42,13 +42,20 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 return;
             }
 
-            const isClientHost = await this.playerRecordRedisService.addNewPlayer(data, client.id, roomInfo.hostId);
+            const {isHost, playerId} = await this.playerRecordRedisService.addNewPlayer(data, client.id, roomInfo.hostId);
             client.join(data.roomPin);
             client.data.roomPin = data.roomPin;
-            client.data.isHost = isClientHost;
+            client.data.isHost = isHost;
+            client.data.playerId = playerId;
 
             const playerList = await this.playerRecordRedisService.playerList(data.roomPin);
-            this.server.to(data.roomPin).emit('playerListUpdate', playerList);
+
+            const dataToReturn = {
+                playerList: playerList,
+                currentPlayerId: playerId
+            };
+
+            this.server.to(data.roomPin).emit('playerListUpdate', dataToReturn);
         } catch (e) {
             console.error('Lỗi khi học sinh join phòng:', e);
             client.emit('error', { message: 'Đã xảy ra lỗi hệ thống, không thể vào phòng.' });
@@ -57,7 +64,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
 
     @SubscribeMessage('leaveRoom')
     async handleLeaveRoom(@ConnectedSocket() client: Socket) {
-        const clientId = client.id;
+        const playerId = client.data.playerId;
         const isHost = client.data.isHost;
         const roomPin = client.data.roomPin;
 
@@ -69,8 +76,8 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             return;
         }
 
-        console.log(`Client ${clientId} is leaving room ${roomPin}`);
-        await this.playerRecordRedisService.leaveRoom(clientId, roomPin);
+        console.log(`Client ${playerId} is leaving room ${roomPin}`);
+        await this.playerRecordRedisService.leaveRoom(playerId, roomPin);
         
         const playersList = await this.playerRecordRedisService.playerList(roomPin);
         this.server.to(roomPin).emit('playerListUpdate', playersList);
@@ -80,6 +87,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
     async handleDisconnect(client: Socket) {
         const roomPin = client.data.roomPin;
         const isHost = client.data.isHost;
+        const playerId = client.data.playerId;
         if (roomPin) {
             if (isHost) {
                 this.server.to(roomPin).emit('roomClosed', { message: 'Giáo viên đã đóng phòng chờ này!' });
@@ -89,10 +97,103 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 return;
             }
 
-            await this.playerRecordRedisService.leaveRoom(client.id, roomPin);
-            const playersList = await this.playerRecordRedisService.playerList(roomPin);
-            this.server.to(roomPin).emit('playerDisconnected', { message: 'Một người chơi đã rời khỏi trò chơi' });
-            this.server.to(roomPin).emit('playerListUpdate', playersList);
+            const periodSeconds: number = 30;
+
+            await this.playerRecordRedisService.markPlayerDisconnect(playerId, roomPin, periodSeconds);
+
+            this.server.to(roomPin).emit('playerDisconnect', {
+                message: `Người chơi ${playerId} mất kết nối`,
+                playerId,
+                periodSeconds
+            });
+
+            const playerList = await this.playerRecordRedisService.playerList(roomPin);
+            this.server.to(roomPin).emit('playerListUpdate', playerList);
+        }
+    }
+
+    @SubscribeMessage('reconnectToRoom')
+    async handleReconnect(@ConnectedSocket() client: Socket, @MessageBody() data: {roomPin: string, playerId: string}){
+        const {roomPin, playerId} = data;
+
+        try{
+            const roomData = await this.gameSessionRedisService.getGameSession(roomPin);
+
+            if(!roomData){
+                throw new NotFoundException('Phòng chơi không tồn tại');
+            }
+
+            const roomInfoData = JSON.parse(roomData);
+
+            const disconnectData = await this.playerRecordRedisService.getDisconnectData(roomPin, playerId);
+
+            if(!disconnectData){
+                throw new NotFoundException('Người chơi cũ không tồn tại');
+            }
+
+            const playerExist = await this.playerRecordRedisService.playerExist(playerId, roomPin);
+            if(!playerExist){
+                throw new NotFoundException('Dữ liệu người chơi không tồn tại');
+            }
+
+            await this.playerRecordRedisService.updatePlayerClientId(playerId, roomPin, client.id);
+
+            client.join(roomPin);
+
+            client.data.roomPin = roomPin;
+            client.data.playerId = playerId;
+            client.data.isHost = false;
+
+            await this.playerRecordRedisService.removeDisconnectPlayer(roomPin, playerId);
+
+            client.emit('reconnectSuccess', { 
+                message: 'Kết nối lại thành công! Dữ liệu của bạn đã được giữ lại.',
+                playerId
+            });
+
+            this.server.to(roomPin).emit('playerReconnected', {
+                message: `Người chơi ${playerId} đã kết nối lại`,
+                playerId
+            });
+
+            const playerList = await this.playerRecordRedisService.playerList(roomPin);
+            this.server.to(roomPin).emit('playerListUpdate', playerList);
+
+            const roomInfo = JSON.parse(roomInfoData)
+
+            if(roomInfo.status !== 'LOBBY'){
+                const rawQuestion = await this.gameSessionRedisService.getQuestion(roomPin);
+
+                if (rawQuestion) {
+                    const questions = JSON.parse(rawQuestion);
+                    const currentQuestion = questions[roomInfo.questionIndex];
+                    
+                    if (currentQuestion) {
+                        let optionsData = currentQuestion.option.map((opt: any) => ({ 
+                            id: opt._id, 
+                            text: opt.content 
+                        }));
+
+                        if (roomInfo.gameSettings?.shuffleOptions) {
+                            optionsData = optionsData.sort(() => Math.random() - 0.5);
+                        }
+
+                        const currentQuestionInfo = {
+                            questionId: currentQuestion._id,
+                            title: currentQuestion.content,
+                            options: optionsData,
+                            duration: Number(currentQuestion.duration) || 30,
+                            currentQuestionIndex: roomInfo.questionIndex + 1,
+                            totalQuestions: questions.length
+                        }
+
+                        client.emit('questionRecived', currentQuestionInfo);
+                    }
+                }
+            }
+        } catch (e: any){
+            console.error('Lỗi khi reconnect:', e);
+            client.emit('error', { message: 'Lỗi hệ thống khi reconnect. Vui lòng thử lại.' });
         }
     }
 
@@ -267,7 +368,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 ...data,
                 isCorrect,
                 score: finalScore 
-            } as any, roomPin, client.id);
+            } as any, roomPin, client.data.playerId);
 
             const currentAnsweredCount = await this.playerRecordRedisService.getCurrentAnswerCount(roomPin, data.questionId);
 
@@ -280,7 +381,6 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             });
 
             if (currentAnsweredCount >= totalPlayers && totalPlayers > 0) {
-                console.log(`[Auto-Advance] Toàn bộ ${totalPlayers} người chơi phòng ${roomPin} đã xong bài sớm. Kích hoạt chuyển câu!`);
 
                 if (this.activeTimers.has(roomPin)) {
                     clearInterval(this.activeTimers.get(roomPin)!);

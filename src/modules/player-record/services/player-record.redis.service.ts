@@ -3,6 +3,8 @@ import { CreatePlayerRecordDto } from "../dto/create-player-record.dto";
 import Redis from "ioredis";
 import { InjectRedis } from "@nestjs-modules/ioredis";
 import { PlayerAnswerDto } from "../dto/save-player-answer.dto";
+import { Type } from "class-transformer";
+import { Types } from "mongoose";
 
 @Injectable()
 export class PlayerRecordRedisService {
@@ -15,24 +17,30 @@ export class PlayerRecordRedisService {
         const key = `game:room:${playerInfo.roomPin}:players`;
         const isHost = (playerInfo.userId && playerInfo.userId === hostId) ? true : false;
 
+        const playerId = playerInfo.userId ? new Types.ObjectId(playerInfo.userId) : new Types.ObjectId();
+
         const newPlayer = {
-            _id: clientId,
+            _id: playerId,
+            socketId: clientId,
             name: playerInfo.name,
             avatar: playerInfo.avatar,
             isHost: isHost
         };
 
-        await this.redis.hset(key, clientId, JSON.stringify(newPlayer));
+        await this.redis.hset(key, String(playerId), JSON.stringify(newPlayer));
         await this.redis.expire(key, 86400);
-        return isHost;
+        return {
+            isHost: isHost,
+            playerId: String(playerId)
+        };
     }
 
-    async leaveRoom(clientId: string, roomPin: string) {
+    async leaveRoom(playerId: string, roomPin: string) {
         const key = `game:room:${roomPin}:players`;
         const leaderboardKey = `game:room:${roomPin}:leaderboard`;
 
-        await this.redis.hdel(key, clientId);
-        await this.redis.zrem(leaderboardKey, clientId); 
+        await this.redis.hdel(key, playerId);
+        await this.redis.zrem(leaderboardKey, playerId); 
     }
 
     async playerList(pin: string) {
@@ -42,9 +50,9 @@ export class PlayerRecordRedisService {
         return rawPlayersList.map(player => JSON.parse(player));
     }
 
-    async addLeaderboard(pin: string, clientId: string, score: number) {
+    async addLeaderboard(pin: string, playerId: string, score: number) {
         const key = `game:room:${pin}:leaderboard`;
-        await this.redis.zincrby(key, score, clientId);
+        await this.redis.zincrby(key, score, playerId);
         await this.redis.expire(key, 86400);
     }
 
@@ -55,15 +63,15 @@ export class PlayerRecordRedisService {
 
         let leaderboardData: any[] = [];
         for (let i = 0; i < leaderboard.length; i += 2) {
-            const clientId = leaderboard[i];
+            const playerId = leaderboard[i];
             const score = parseInt(leaderboard[i + 1], 10);
-            const playerData = await this.redis.hget(playersKey, clientId);
+            const playerData = await this.redis.hget(playersKey, playerId);
             if (playerData) {
                 const { name, avatar, isHost } = JSON.parse(playerData);
                 if (isHost) continue;
                 
                 leaderboardData.push({
-                    clientId,
+                    playerId,
                     name,
                     avatar,
                     score
@@ -73,7 +81,7 @@ export class PlayerRecordRedisService {
         return leaderboardData;
     }
 
-    async playerAnswer(playerAnswerInfo: PlayerAnswerDto & { score: number, isCorrect: boolean }, roomPin: string, clientId: string) {
+    async playerAnswer(playerAnswerInfo: PlayerAnswerDto & { score: number, isCorrect: boolean }, roomPin: string, playerId: string) {
         const key = `game:room:${roomPin}:answer:${playerAnswerInfo.questionId}`;
 
         const answerPayload = {
@@ -82,11 +90,11 @@ export class PlayerRecordRedisService {
             isCorrect: playerAnswerInfo.isCorrect,
         };
 
-        await this.redis.hset(key, clientId, JSON.stringify(answerPayload));
+        await this.redis.hset(key, playerId, JSON.stringify(answerPayload));
         await this.redis.expire(key, 86400);
 
         if (playerAnswerInfo.score > 0) {
-            await this.addLeaderboard(roomPin, clientId, playerAnswerInfo.score);
+            await this.addLeaderboard(roomPin, playerId, playerAnswerInfo.score);
         }
     }
 
@@ -95,9 +103,53 @@ export class PlayerRecordRedisService {
         return this.redis.hlen(key);
     }
 
-    async getAllPlayersAnswer(roomPin: string, clientId: string){
-        const playerAnswersKey = `game:room:${roomPin}:answer:${clientId}`;
+    async getAllPlayersAnswer(roomPin: string, playerId: string){
+        const playerAnswersKey = `game:room:${roomPin}:answer:${playerId}`;
 
         return await this.redis.hgetall(playerAnswersKey);
+    }
+
+    async markPlayerDisconnect(playerId: string, roomPin: string, periodSecond: number){
+        const disconnectKey = `disconnect:${roomPin}:${playerId}`;
+
+        const disconnectData = {
+            playerId,
+            roomPin,
+            disconnectTime: Date.now()
+        }
+
+        await this.redis.setex(disconnectKey, periodSecond, JSON.stringify(disconnectData));
+    }
+
+    async removeDisconnectPlayer(roomPin: string, playerId: string){
+        const disconnectKey = `disconnect:${roomPin}:${playerId}`;
+
+        await this.redis.del(disconnectKey);
+    }
+
+    async getDisconnectData(roomPin: string, playerId: string){
+        const disconnectKey = `disconnect:${roomPin}:${playerId}`;
+        return await this.redis.get(disconnectKey);
+    }
+
+    async updatePlayerClientId(playerId: string, roomPin: string, newClientId: string){
+        const key = `game:room:${roomPin}:players`;
+
+        const playerData = await this.redis.hget(key, playerId);
+        
+        if(playerData){
+            const player = JSON.parse(playerData);
+            player.socket = newClientId;
+            await this.redis.hset(key, playerId, JSON.stringify(player));
+            return true;
+        }
+
+        return false;
+    }
+
+    async playerExist(playerId: string, roomPin: string){
+        const key = `game:room:${roomPin}:players`;
+
+        return await this.redis.hexists(key, playerId);
     }
 }
