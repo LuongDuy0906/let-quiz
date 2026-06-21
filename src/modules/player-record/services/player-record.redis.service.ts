@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { CreatePlayerRecordDto } from "../dto/create-player-record.dto";
 import Redis from "ioredis";
 import { InjectRedis } from "@nestjs-modules/ioredis";
@@ -81,7 +81,7 @@ export class PlayerRecordRedisService {
         return leaderboardData;
     }
 
-    async playerAnswer(playerAnswerInfo: PlayerAnswerDto & { score: number, isCorrect: boolean }, roomPin: string, playerId: string) {
+    async addPlayerAnswer(playerAnswerInfo: PlayerAnswerDto & { score: number, isCorrect: boolean }, roomPin: string, playerId: string) {
         const key = `game:room:${roomPin}:answer:${playerAnswerInfo.questionId}`;
 
         const answerPayload = {
@@ -103,10 +103,39 @@ export class PlayerRecordRedisService {
         return this.redis.hlen(key);
     }
 
-    async getAllPlayersAnswer(roomPin: string, playerId: string){
-        const playerAnswersKey = `game:room:${roomPin}:answer:${playerId}`;
+    async getAllPlayersAnswer(roomPin: string) {
+        const pattern = `game:room:${roomPin}:answer:*`;
+        const allQuestionKeys = await this.redis.keys(pattern);
 
-        return await this.redis.hgetall(playerAnswersKey);
+        if (allQuestionKeys.length === 0) {
+            return {};
+        }
+
+        const pipeline = this.redis.pipeline();
+        for (const key of allQuestionKeys) {
+            pipeline.hgetall(key);
+        }
+
+        const pipelineResults = await pipeline.exec();
+        const allAnswersResult = {};
+
+        if (!pipelineResults) return {};
+
+        for (let i = 0; i < allQuestionKeys.length; i++) {
+            const questionId = allQuestionKeys[i].split(':').pop();
+            const [err, questionAnswers] = pipelineResults[i] as [Error | null, Record<string, string>];
+
+            if (err || !questionAnswers) continue;
+
+            for (const [playerId, answerStr] of Object.entries(questionAnswers)) {
+                if (!allAnswersResult[playerId]) {
+                    allAnswersResult[playerId] = {};
+                }
+                allAnswersResult[playerId][questionId] = JSON.parse(answerStr);
+            }
+        }
+
+        return allAnswersResult;
     }
 
     async markPlayerDisconnect(playerId: string, roomPin: string, periodSecond: number){

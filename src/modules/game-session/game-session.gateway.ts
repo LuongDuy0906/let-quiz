@@ -78,6 +78,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
 
         console.log(`Client ${playerId} is leaving room ${roomPin}`);
         await this.playerRecordRedisService.leaveRoom(playerId, roomPin);
+        this.server.to(roomPin).emit('playerLeaved', {message: `Người chơi ${playerId} đã rời khỏi phòng chơi`});
         
         const playersList = await this.playerRecordRedisService.playerList(roomPin);
         this.server.to(roomPin).emit('playerListUpdate', playersList);
@@ -256,8 +257,14 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             const settings = roomInfo.gameSettings;
 
             if (currentIndex >= questions.length) {
-                this.server.to(roomPin).emit('gameEnded', { message: "Trò chơi đã kết thúc" });
-                return;
+               if(settings?.showLeaderboard){
+                    const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 10);
+                    this.server.to(roomPin).emit('finalLeaderboard', finalLeaderboard);
+               }
+
+               await this.gameSessionRedisService.updateGameSessionStatus(roomPin);
+
+               return;
             }
 
             const currentQuestion = questions[currentIndex];
@@ -364,7 +371,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 }
             }
 
-            await this.playerRecordRedisService.playerAnswer({
+            await this.playerRecordRedisService.addPlayerAnswer({
                 ...data,
                 isCorrect,
                 score: finalScore 
