@@ -3,8 +3,8 @@ import { QuizService } from './quiz.service';
 import { QuizController } from './quiz.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Quiz, QuizSchema } from './entities/quiz.entity';
-import { UserService } from '../user/user.service';
 import { UserModule } from '../user/user.module';
+import { GeminiAIModule } from '../gemini/gemini-ai.module';
 
 @Module({
   imports: [
@@ -14,7 +14,8 @@ import { UserModule } from '../user/user.module';
         schema: QuizSchema
       }
     ]),
-    UserModule
+    UserModule,
+    GeminiAIModule
   ],
   controllers: [QuizController],
   providers: [QuizService],

@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagg
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ParamDTO } from './dto/params.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { GeminiGenerateDTO } from '../gemini/dto/gemini-generate.dto';
 
 @Controller('quiz')
 export class QuizController {
@@ -82,5 +83,12 @@ export class QuizController {
   @ApiBearerAuth()
   rating(@Param("id") id: string, @Body() body: {rating: number}){
     return this.quizService.rating(id, body.rating);
+  }
+
+  @Post('generate-preview')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async generatePreview(@Body() data: GeminiGenerateDTO) {
+    return this.quizService.generateQuizQuestionsPreview(data);
   }
 }

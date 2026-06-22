@@ -7,13 +7,16 @@ import { Model, Types } from 'mongoose';
 import { QuizStatus } from 'src/enum/quizStatus';
 import { ParamDTO } from './dto/params.dto';
 import { UserService } from '../user/user.service';
+import { GeminiAIService } from '../gemini/gemini-ai.service';
+import { GeminiGenerateDTO } from '../gemini/dto/gemini-generate.dto';
 
 @Injectable()
 export class QuizService {
   constructor(
     @InjectModel(Quiz.name)
     private readonly quizModel: Model<QuizDocument>,
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly geminiService: GeminiAIService
   ) {}
 
   async create(userId: string, createQuizDto: CreateQuizDto) {
@@ -96,4 +99,22 @@ export class QuizService {
 
     return updatedQuiz;
   }
+
+  async generateQuizQuestionsPreview(data: GeminiGenerateDTO): Promise<any[]> {
+        const rawQuestions = await this.geminiService.generateRawQuestions(data);
+
+        const formattedQuestions = rawQuestions.map((q: any) => ({
+            _id: new Types.ObjectId().toString(),
+            content: q.content,
+            questionType: q.questionType || 'SINGLE_CHOICE',
+            timeLimit: data.timeLimit,
+            options: (q.options || []).map((opt: any) => ({
+                _id: new Types.ObjectId().toString(),
+                content: opt.content,
+                isCorrect: opt.isCorrect
+            }))
+        }));
+
+        return formattedQuestions;
+    }
 }

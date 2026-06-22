@@ -3,14 +3,18 @@ import { PlayerRecordService } from './services/player-record.service';
 import { CreatePlayerRecordDto } from './dto/create-player-record.dto';
 import { UpdatePlayerRecordDto } from './dto/update-player-record.dto';
 import { InsertPlayerRecordDto } from './dto/insert-player-record.dto';
+import { PlayerRecordRedisService } from './services/player-record.redis.service';
 
 @Controller('player-record')
 export class PlayerRecordController {
-  constructor(private readonly playerRecordService: PlayerRecordService) {}
+  constructor(
+    private readonly playerRecordService: PlayerRecordService,
+    private readonly playerRecordRedisService: PlayerRecordRedisService
+  ) {}
 
-  @Get()
-  findAll() {
-    return this.playerRecordService.findAll();
+  @Get(':roomPin')
+  findAll(@Param('roomPin') roomPin: string) {
+    return this.playerRecordRedisService.getAllPlayersAnswer(roomPin);
   }
 
   @Get(':id')

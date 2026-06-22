@@ -12,13 +12,15 @@ import { MailModule } from './modules/mail/mail.module';
 import { GameSessionModule } from './modules/game-session/game-session.module';
 import { PlayerRecordModule } from './modules/player-record/player-record.module';
 import { LoggerModule } from './common/logger/logger.module';
+import geminiAiConfig from './config/gemini-ai.config';
 
 @Module({
   imports: [
     UserModule,
     ConfigModule.forRoot({
       envFilePath: '.env',
-      isGlobal: true
+      isGlobal: true,
+      load: [geminiAiConfig]
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
