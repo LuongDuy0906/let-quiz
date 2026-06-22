@@ -37,7 +37,7 @@ export class CreateQuizDto {
     @ValidateNested({each: true})
     @ArrayMaxSize(30, {message: "Một bộ đề chỉ có tối đa 30 câu hỏi"})
     @Type(() => QuestionDTO)
-    question: QuestionDTO[];
+    questions: QuestionDTO[];
 
     @IsOptional()
     description: string;

@@ -19,7 +19,7 @@ export class QuestionDTO{
     @ArrayMaxSize(4, {message: "Tối đa chỉ được 4 đáp án"})
     @ValidateNested({ each: true })
     @Type(() => OptionDTO)
-    option: OptionDTO[];
+    options: OptionDTO[];
 
     @IsNotEmpty({message: "Thời gian không được để trống"})
     @IsNumber({}, {message: "Thời gian phải là số"})
