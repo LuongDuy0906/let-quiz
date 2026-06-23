@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { PlayerRecordRedisService } from 'src/modules/player-record/services/player-record.redis.service';
 import { QuizService } from 'src/modules/quiz/quiz.service';
 import { PlayerRecordService } from 'src/modules/player-record/services/player-record.service';
-import { GameSessionStatus } from 'src/enum/gameSesstionStatus';
+import { GameSessionStatus } from 'src/common/enum/gameSesstionStatus';
 import { PlayerRecord, PlayerRecordDocument } from 'src/modules/player-record/entities/player-record.entity';
 
 @Injectable()
@@ -103,7 +103,7 @@ export class GameSessionService {
         const roomInfo = JSON.parse(rawRoomData);
         const sessionId = new Types.ObjectId(roomInfo._id); 
 
-        await this.gameSessionModel.findByIdAndUpdate(sessionId, { status: 'COMPLETED' });
+        await this.gameSessionModel.findByIdAndUpdate(sessionId, { status: GameSessionStatus.ENDED});
 
         const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 100);
 
@@ -111,8 +111,8 @@ export class GameSessionService {
         let rankCounter = 1;
 
         for (const player of finalLeaderboard) {
-            const { clientId, score } = player;
-            const playerAnswersKey = `game:room:${roomPin}:answer:${clientId}`;
+            const { playerId, score } = player;
+            const playerAnswersKey = `game:room:${roomPin}:answer:${playerId}`;
             const allAnswersRaw = await this.playerRecordRedisService['redis'].hgetall(playerAnswersKey);
 
             const responseHistory: any[] = [];
@@ -134,7 +134,7 @@ export class GameSessionService {
 
             bulkUpdateOperations.push({
                 updateOne: {
-                    filter: { sessionId: sessionId, playerId: clientId },
+                    filter: { sessionId: sessionId, playerId: playerId },
                     update: {
                         $set: {
                             totalScore: score,

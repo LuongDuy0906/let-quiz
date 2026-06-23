@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsNotEmpty, IsNumber } from "class-validator";
-import { QuizTag } from "src/enum/quizTag";
+import { QuizTag } from "src/common/enum/quizTag";
 
 export class GeminiGenerateDTO{
     @IsNotEmpty({message: 'Bạn cần phải nhập prompt'})

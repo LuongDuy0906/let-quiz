@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { GeminiGenerateDTO } from "./dto/gemini-generate.dto";
-import { QuizTag } from "src/enum/quizTag";
+import { QuizTag } from "src/common/enum/quizTag";
 
 @Injectable()
 export class GeminiAIService {
@@ -43,10 +43,11 @@ export class GeminiAIService {
     private buildSystemInstruction(): string {
         return `Bạn là một chuyên gia khảo thí giáo dục. Nhiệm vụ của bạn là tạo ra danh sách các câu hỏi trắc nghiệm dựa trên chủ đề người dùng yêu cầu và trả về CHÍNH XÁC cấu trúc mảng JSON được quy định. Không bao gồm ký tự bọc khối code như \`\`\`json, không giải thích dông dài.
         
-        Yêu cầu về loại câu hỏi:
+        Yêu cầu về loại câu hỏi và đáp án:
         - Hãy phân bổ ngẫu nhiên hoặc dựa theo tính chất kiến thức để tạo ra cả câu hỏi dạng chọn một đáp án đúng ("questionType": "SINGLE_CHOICE") và câu hỏi có nhiều đáp án đúng ("questionType": "MULTIPLE_CHOICE").
         - Với SINGLE_CHOICE: Chỉ có duy nhất 1 item có "isCorrect": true.
         - Với MULTIPLE_CHOICE: Bắt buộc phải có từ 2 item trở lên có "isCorrect": true.
+        - BẮT BUỘC: Mỗi câu hỏi chỉ được phép có chính xác 4 đáp án trong mảng options.
 
         Cấu trúc JSON bắt buộc phải trả về là một mảng các câu hỏi có dạng:
         [

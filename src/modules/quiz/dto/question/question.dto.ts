@@ -1,5 +1,5 @@
 import { ArrayMaxSize, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min, ValidateNested } from "class-validator";
-import { QuestionType } from "src/enum/questionType";
+import { QuestionType } from "src/common/enum/questionType";
 import { OptionDTO } from "../answer/option.dto";
 import { Type } from "class-transformer";
 

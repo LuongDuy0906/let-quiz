@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, ObjectId } from "mongoose";
-import { UserRole } from "src/enum/userRole";
+import { UserRole } from "src/common/enum/userRole";
 import { Profile } from "./profile.entity";
 import { Quiz } from "src/modules/quiz/entities/quiz.entity";
 
@@ -20,9 +20,6 @@ export class User {
 
     @Prop({required: true})
     password: string;
-
-    @Prop({required: true, enum: UserRole, default: UserRole.USER})
-    role: UserRole;
 
     @Prop({type: Profile})
     profile: Profile;

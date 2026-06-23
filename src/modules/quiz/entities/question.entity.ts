@@ -1,5 +1,5 @@
 import { Prop, Schema } from "@nestjs/mongoose";
-import { QuestionType } from "src/enum/questionType";
+import { QuestionType } from "src/common/enum/questionType";
 import { Option } from "./option.entity";
 
 @Schema()

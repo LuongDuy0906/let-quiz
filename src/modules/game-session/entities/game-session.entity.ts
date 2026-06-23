@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { GameMetrics } from "./game-metrics.entity";
-import { GameSessionStatus } from "src/enum/gameSesstionStatus";
+import { GameSessionStatus } from "src/common/enum/gameSesstionStatus";
 
 export type GameSessionDocument = HydratedDocument<GameSession>;
 

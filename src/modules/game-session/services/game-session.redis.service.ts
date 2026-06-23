@@ -2,7 +2,7 @@ import { InjectRedis } from "@nestjs-modules/ioredis";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import Redis from "ioredis";
 import { Types } from "mongoose";
-import { GameSessionStatus, GameState } from "src/enum/gameSesstionStatus";
+import { GameSessionStatus, GameState } from "src/common/enum/gameSesstionStatus";
 import { GameSettings } from '../dto/game-settings/game-settings.dto';
 
 @Injectable()

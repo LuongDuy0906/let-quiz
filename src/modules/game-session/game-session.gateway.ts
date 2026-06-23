@@ -419,4 +419,31 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             await this.internalNextQuestion(roomPin);
         }, 5000);
     }
+
+    @SubscribeMessage('gameEnded')
+    async handleEndGame(@ConnectedSocket() client: Socket){
+        const roomPin = client.data.roomPin;
+        const isHost = client.data.isHost;
+
+        if(!roomPin || !isHost) return;
+
+        try {
+            if(this.activeTimers.has(roomPin)) {
+                clearInterval(this.activeTimers.get(roomPin));
+                this.activeTimers.delete(roomPin);
+            };
+
+            this.server.to(roomPin).emit('gameFinished', {
+                message: 'Host đã kết thúc phiên chơi',
+            });
+
+            await this.gameSessionService.saveSessionResultsToMongo(roomPin);
+
+            this.server.in(roomPin).socketsLeave(roomPin);
+
+        } catch (error) {
+            console.error('Lỗi khi xử lý chủ động kết thúc game:', error);
+            client.emit('error', { message: 'Không thể đóng phòng chơi lúc này.' });
+        }
+    }
 }

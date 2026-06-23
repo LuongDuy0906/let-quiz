@@ -4,7 +4,7 @@ import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Quiz, QuizDocument } from './entities/quiz.entity';
 import { Model, Types } from 'mongoose';
-import { QuizStatus } from 'src/enum/quizStatus';
+import { QuizStatus } from 'src/common/enum/quizStatus';
 import { ParamDTO } from './dto/params.dto';
 import { UserService } from '../user/user.service';
 import { GeminiAIService } from '../gemini/gemini-ai.service';
@@ -104,12 +104,10 @@ export class QuizService {
         const rawQuestions = await this.geminiService.generateRawQuestions(data);
 
         const formattedQuestions = rawQuestions.map((q: any) => ({
-            _id: new Types.ObjectId().toString(),
             content: q.content,
             questionType: q.questionType || 'SINGLE_CHOICE',
             timeLimit: data.timeLimit,
             options: (q.options || []).map((opt: any) => ({
-                _id: new Types.ObjectId().toString(),
                 content: opt.content,
                 isCorrect: opt.isCorrect
             }))

@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, ObjectId, Types } from "mongoose";
 import { Question } from "./question.entity";
-import { QuizStatus } from "src/enum/quizStatus";
-import { QuizTag } from "src/enum/quizTag";
+import { QuizStatus } from "src/common/enum/quizStatus";
+import { QuizTag } from "src/common/enum/quizTag";
 
 export type QuizDocument = HydratedDocument<Quiz>;
 

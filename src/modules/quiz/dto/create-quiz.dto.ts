@@ -1,8 +1,8 @@
 import { ArrayMaxSize, IsEnum, IsNotEmpty, IsOptional, Validate, ValidateNested } from "class-validator";
 import { QuestionDTO } from "./question/question.dto";
-import { QuizStatus } from "src/enum/quizStatus";
+import { QuizStatus } from "src/common/enum/quizStatus";
 import { ApiProperty } from "@nestjs/swagger";
-import { QuizTag } from "src/enum/quizTag";
+import { QuizTag } from "src/common/enum/quizTag";
 import { Type } from "class-transformer";
 
 export class CreateQuizDto {
