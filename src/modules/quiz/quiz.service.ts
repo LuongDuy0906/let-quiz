@@ -100,19 +100,25 @@ export class QuizService {
     return updatedQuiz;
   }
 
-  async generateQuizQuestionsPreview(data: GeminiGenerateDTO): Promise<any[]> {
-        const rawQuestions = await this.geminiService.generateRawQuestions(data);
+  async generateQuizQuestionsPreview(data: GeminiGenerateDTO) {
+    const rawQuestions = await this.geminiService.generateRawQuestions(data);
 
-        const formattedQuestions = rawQuestions.map((q: any) => ({
-            content: q.content,
-            questionType: q.questionType || 'SINGLE_CHOICE',
-            timeLimit: data.timeLimit,
-            options: (q.options || []).map((opt: any) => ({
-                content: opt.content,
-                isCorrect: opt.isCorrect
-            }))
-        }));
+    const formattedQuestions = rawQuestions.map((q: any) => ({
+      content: q.content,
+      questionType: q.questionType || 'SINGLE_CHOICE',
+      timeLimit: data.timeLimit,
+      options: (q.options || []).map((opt: any) => ({
+        content: opt.content,
+        isCorrect: opt.isCorrect
+    }))
+  }));
 
-        return formattedQuestions;
-    }
+    return {
+      title: `Bộ đề AI: ${data.prompt || 'Chưa có tiêu đề'}`,
+      description: "Được khởi tạo tự động bởi AI",
+      image: "",
+      tag: data.tags,
+      questions: formattedQuestions
+    };
+  }
 }
