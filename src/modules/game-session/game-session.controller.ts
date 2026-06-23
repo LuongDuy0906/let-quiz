@@ -42,8 +42,8 @@ export class GameSessionController {
 
   @Patch(':roomPin/settings')
   @UseGuards(JwtAuthGuard)
-  updateSettingForGameSession(@Req() req, @Param('roomPin') roomPin: string, @Body() settings: GameSettings){
-    return this.gameSessionRedisService.updateGameSessionSettings(req.user.userId, roomPin, settings);
+  async updateSettingForGameSession(@Req() req, @Param('roomPin') roomPin: string, @Body() settings: GameSettings){
+    await this.gameSessionRedisService.updateGameSessionSettings(req.user.userId, roomPin, settings);
   }
 
   @Post('start')

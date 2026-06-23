@@ -16,11 +16,8 @@ export class Question{
     @Prop({type: [Option], default: []})
     options: Option[];
 
-    @Prop({default: 30})
+    @Prop({default: 20})
     timeLimit: number;
-
-    @Prop({default: 10})
-    point: number;
 
     @Prop({default: ''})
     information: string;

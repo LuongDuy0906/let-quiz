@@ -39,6 +39,8 @@ export class GameSessionService {
 
     const quizData = await this.quizService.findOne(gameSessionData.quizId);
 
+    console.log(quizData);
+
     if(!quizData){
       throw new NotFoundException("Không tìm thấy bộ đề");
     }

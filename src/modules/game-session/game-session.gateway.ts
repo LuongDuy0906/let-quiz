@@ -282,7 +282,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                     clearInterval(countdownTimer);
                     this.activeCountdowns.delete(roomPin);
 
-                    let optionsData = currentQuestion.option.map((opt: any) => ({ id: opt._id, text: opt.content }));
+                    let optionsData = currentQuestion.options.map((opt: any) => ({ id: opt._id, text: opt.content }));
 
                     if (settings?.shuffleOptions) {
                         optionsData = optionsData.sort(() => Math.random() - 0.5);

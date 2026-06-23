@@ -73,7 +73,7 @@ export class GameSessionRedisService{
     async saveQuestion(pin: string, questionInfo: any){
         const key = `game:room:${pin}:question`;
 
-        await this.redis.set(key, JSON.stringify(questionInfo.question), 'EX', 86400);
+        await this.redis.set(key, JSON.stringify(questionInfo.questions), 'EX', 86400);
         return;
     }
 
@@ -134,8 +134,6 @@ export class GameSessionRedisService{
         const key = `game:room:${roomPin}:info`;
 
         await this.redis.set(key, JSON.stringify(gameSessionData), 'EX', 86400);
-
-        return;
     }
 
     async generatePinned(): Promise<string> {

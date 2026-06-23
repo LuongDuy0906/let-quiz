@@ -23,13 +23,8 @@ export class QuestionDTO{
 
     @IsNotEmpty({message: "Thời gian không được để trống"})
     @IsNumber({}, {message: "Thời gian phải là số"})
-    @Min(30, {message: "Thời gian ít nhất là phải 30 giây"})
+    @Min(20, {message: "Thời gian ít nhất là phải 20 giây"})
     timeLimit: number;
-
-    @IsNotEmpty({message: "Điểm số không được để trống"})
-    @IsNumber({}, {message: "Điểm phải là kiểu số"})
-    @Min(10, {message: "Điểm số ít nhất phải là 10"})
-    point: number;
 
     @IsOptional()
     information: string
