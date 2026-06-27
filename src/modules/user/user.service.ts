@@ -63,7 +63,7 @@ export class UserService {
 
     const [quizzes, totalQuizzes] = await Promise.all([
       this.quizModel.find({authorId: new Types.ObjectId(id)})
-        .select('title status rating ratingCount createdAt image')
+        .select('title status rating ratingCount createdAt image isAiGenerated information')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

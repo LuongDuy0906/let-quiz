@@ -19,7 +19,7 @@ export class Quiz {
     @Prop({required: true})
     title: string;
 
-    @Prop({required: true})
+    @Prop({required: false})
     image: string;
 
     @Prop({type: [String], enum: QuizTag, required: true})
@@ -39,6 +39,9 @@ export class Quiz {
 
     @Prop({type: String, enum: QuizStatus, default: QuizStatus.PUBLIC})
     status: QuizStatus;
+
+    @Prop({type: Boolean, default: false})
+    isAiGenerated: boolean;
 }
 
 export const QuizSchema = SchemaFactory.createForClass(Quiz);

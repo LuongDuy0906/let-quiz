@@ -91,7 +91,6 @@ export class AuthService {
 
     try {
       await this.mailService.sendPasswordResetEmail(email, resetToken);
-      return {message: "Đã gửi email thành công"};
     } catch(e){
       console.log('Lỗi gửi email');
       await this.redisService.deleteToken(`reset_token:${email}`);

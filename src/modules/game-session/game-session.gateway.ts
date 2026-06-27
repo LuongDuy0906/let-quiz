@@ -124,8 +124,6 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 throw new NotFoundException('Phòng chơi không tồn tại');
             }
 
-            const roomInfoData = JSON.parse(roomData);
-
             const disconnectData = await this.playerRecordRedisService.getDisconnectData(roomPin, playerId);
 
             if(!disconnectData){
@@ -160,7 +158,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             const playerList = await this.playerRecordRedisService.playerList(roomPin);
             this.server.to(roomPin).emit('playerListUpdate', playerList);
 
-            const roomInfo = JSON.parse(roomInfoData)
+            const roomInfo = JSON.parse(roomData)
 
             if(roomInfo.status !== 'LOBBY'){
                 const rawQuestion = await this.gameSessionRedisService.getQuestion(roomPin);
@@ -344,9 +342,11 @@ export class GameSessionGateway implements OnGatewayDisconnect {
         @MessageBody() data: PlayerAnswerDto & { score: number }
     ) {
         const roomPin = client.data.roomPin;
+        const playerId = client.data.playerId;
         if (!roomPin) return;
 
         try {
+            console.log(data);
             let clientScore = data.score || 0;
             if (clientScore > 1000) clientScore = 1000;
             if (clientScore < 0) clientScore = 0;
@@ -362,7 +362,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 const roomInfo = JSON.parse(rawRoomData);
                 const currentQuestion = questions[roomInfo.questionIndex];
 
-                isCorrect = currentQuestion.option.find((opt: any) => opt._id === data.answerId)?.isCorrect;
+                isCorrect = currentQuestion.options.find((opt: any) => opt._id === data.answerId)?.isCorrect;
 
                 if (isCorrect) {
                     finalScore = clientScore;
@@ -375,7 +375,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 ...data,
                 isCorrect,
                 score: finalScore 
-            } as any, roomPin, client.data.playerId);
+            } as any, roomPin, playerId);
 
             const currentAnsweredCount = await this.playerRecordRedisService.getCurrentAnswerCount(roomPin, data.questionId);
 

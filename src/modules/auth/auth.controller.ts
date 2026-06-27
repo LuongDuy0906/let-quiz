@@ -34,7 +34,7 @@ export class AuthController {
   @Post('forgot-password')
   @UseGuards(JwtAuthGuard)
   forgotPassword(@Body() body: ForgotPasswordDTO){
-    return this.authService.forgotPassword(body.email);
+    this.authService.forgotPassword(body.email);
   }
 
   @Patch('change-password')

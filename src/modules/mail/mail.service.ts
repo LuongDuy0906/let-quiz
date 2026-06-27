@@ -49,7 +49,7 @@ export class MailService {
                 <h3>Xin chào!</h3>
                 <p>Bạn vừa yêu cầu xoá tài khoản trên Let Quiz.</p>
                 <p>Vui lòng click vào đường link dưới đây để thực hiện việc xoá tài khoản. <b>Đường link này chỉ có hiệu lực trong 15 phút.</b></p>
-                <a href="${deleteLink}" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Đổi Mật Khẩu Ngay</a>
+                <a href="${deleteLink}" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Xoá tài khoản ngay</a>
                 <br><br>
                 <p>Nếu nút bấm không hoạt động, bạn có thể copy đường link sau dán vào trình duyệt:</p>
                 <p><i>${deleteLink}</i></p>

@@ -1,4 +1,4 @@
-import { Injectable, Ip, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Ip, NotFoundException } from '@nestjs/common';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -35,7 +35,7 @@ export class QuizService {
     }
 
     const [data, total] = await Promise.all([
-      this.quizModel.find(filter).populate('authorId', 'profile.username').select('image title rating createdAt').sort({[sort]: -1}).limit(5).lean().exec(),
+      this.quizModel.find(filter).populate('authorId', 'profile.username').select('image title rating isAiGenerated createdAt').sort({[sort]: -1}).limit(5).lean().exec(),
       this.quizModel.countDocuments(filter)
     ]);
 
@@ -100,12 +100,28 @@ export class QuizService {
     return updatedQuiz;
   }
 
+  async getQuestionWithQuizId(id: string, userId: string) {
+    const quizData = await this.quizModel.findById(id);
+
+    if(!quizData) {
+      throw new NotFoundException('Bộ đề không tồn tại');
+    }
+
+    const isUserQuiz: boolean = String(quizData.authorId) === userId;
+    
+    if(isUserQuiz === false){
+      throw new ConflictException('Bạn không có quyền truy cập bộ đề');
+    }
+
+    return quizData;
+  }
+
   async generateQuizQuestionsPreview(data: GeminiGenerateDTO) {
     const rawQuestions = await this.geminiService.generateRawQuestions(data);
 
     const formattedQuestions = rawQuestions.map((q: any) => ({
       content: q.content,
-      questionType: q.questionType || 'SINGLE_CHOICE',
+      questionType: q.questionType || 'single',
       timeLimit: data.timeLimit,
       options: (q.options || []).map((opt: any) => ({
         content: opt.content,
@@ -118,6 +134,7 @@ export class QuizService {
       description: "Được khởi tạo tự động bởi AI",
       image: "",
       tag: data.tags,
+      isAiGenerated: true,
       questions: formattedQuestions
     };
   }

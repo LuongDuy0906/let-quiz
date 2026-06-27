@@ -50,7 +50,11 @@ export class CreateQuizDto {
     tag: QuizTag[]
 
     @ApiProperty({description: "Trạng thái bộ đề", example: "public"})
-    @IsOptional()
+    @IsNotEmpty({message: "Thể loại bộ đề không được để trống"})
     @IsEnum(QuizStatus, {message: "Trạng thái bộ đề không hợp lệ"})
     status: QuizStatus;
+
+    @ApiProperty({description: "Có phải câu hỏi AI không"})
+    @IsOptional()
+    isAiGenerated: boolean;
 }

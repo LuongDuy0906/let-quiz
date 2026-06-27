@@ -57,8 +57,10 @@ export class QuizController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quizService.findOne(id);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getQuestionWithQuizId(@Param('id') id: string, @Req() req: any){
+    return this.quizService.getQuestionWithQuizId(id, req.user.userId);
   }
 
   @Get(':tag')
