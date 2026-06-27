@@ -136,6 +136,17 @@ export class GameSessionRedisService{
         await this.redis.set(key, JSON.stringify(gameSessionData), 'EX', 86400);
     }
 
+    async setQuestionStartTime(roomPin: string, questionId: string, timestamp: number): Promise<void> {
+        const key = `game:room:${roomPin}:question:${questionId}:startTime`;
+        await this.redis.set(key, timestamp.toString(), 'EX', 86400);
+    }
+
+    async getQuestionStartTime(roomPin: string, questionId: string): Promise<number | null> {
+        const key = `game:room:${roomPin}:question:${questionId}:startTime`;
+        const time = await this.redis.get(key);
+        return time ? parseInt(time, 10) : null;
+    }
+
     async generatePinned(): Promise<string> {
         let pin: string = "";
         let isPinUsed = true;
