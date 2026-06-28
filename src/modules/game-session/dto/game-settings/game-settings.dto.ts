@@ -2,11 +2,11 @@ import { IsOptional } from "class-validator";
 
 export class GameSettings{
     @IsOptional()
-    showLeaderBoard?: boolean;
+    showLeaderboard?: boolean;
 
     @IsOptional()
-    shuffleQuestion?: boolean;
+    shuffleQuestions?: boolean;
 
     @IsOptional()
-    shuffleOption?: boolean;
+    shuffleOptions?: boolean;
 }

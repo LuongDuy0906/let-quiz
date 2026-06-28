@@ -11,7 +11,7 @@ export class PlayerRecordRedisService {
     constructor(
         @InjectRedis()
         private readonly redis: Redis
-    ) {}
+    ) { }
 
     async addNewPlayer(playerInfo: CreatePlayerRecordDto, clientId: string, hostId: string) {
         const key = `game:room:${playerInfo.roomPin}:players`;
@@ -29,6 +29,9 @@ export class PlayerRecordRedisService {
 
         await this.redis.hset(key, String(playerId), JSON.stringify(newPlayer));
         await this.redis.expire(key, 86400);
+
+        await this.addLeaderboard(playerInfo.roomPin, String(playerId), 0);
+
         return {
             isHost: isHost,
             playerId: String(playerId)
@@ -40,13 +43,13 @@ export class PlayerRecordRedisService {
         const leaderboardKey = `game:room:${roomPin}:leaderboard`;
 
         await this.redis.hdel(key, playerId);
-        await this.redis.zrem(leaderboardKey, playerId); 
+        await this.redis.zrem(leaderboardKey, playerId);
     }
 
     async playerList(pin: string) {
         const key = `game:room:${pin}:players`;
         const rawPlayersList = await this.redis.hvals(key);
-        
+
         return rawPlayersList.map(player => JSON.parse(player));
     }
 
@@ -67,9 +70,8 @@ export class PlayerRecordRedisService {
             const score = parseInt(leaderboard[i + 1], 10);
             const playerData = await this.redis.hget(playersKey, playerId);
             if (playerData) {
-                const { name, avatar, isHost } = JSON.parse(playerData);
-                if (isHost) continue;
-                
+                const { name, avatar } = JSON.parse(playerData);
+
                 leaderboardData.push({
                     playerId,
                     name,
@@ -138,7 +140,7 @@ export class PlayerRecordRedisService {
         return allAnswersResult;
     }
 
-    async markPlayerDisconnect(playerId: string, roomPin: string, periodSecond: number){
+    async markPlayerDisconnect(playerId: string, roomPin: string, periodSecond: number) {
         const disconnectKey = `disconnect:${roomPin}:${playerId}`;
 
         const disconnectData = {
@@ -150,23 +152,23 @@ export class PlayerRecordRedisService {
         await this.redis.setex(disconnectKey, periodSecond, JSON.stringify(disconnectData));
     }
 
-    async removeDisconnectPlayer(roomPin: string, playerId: string){
+    async removeDisconnectPlayer(roomPin: string, playerId: string) {
         const disconnectKey = `disconnect:${roomPin}:${playerId}`;
 
         await this.redis.del(disconnectKey);
     }
 
-    async getDisconnectData(roomPin: string, playerId: string){
+    async getDisconnectData(roomPin: string, playerId: string) {
         const disconnectKey = `disconnect:${roomPin}:${playerId}`;
         return await this.redis.get(disconnectKey);
     }
 
-    async updatePlayerClientId(playerId: string, roomPin: string, newClientId: string){
+    async updatePlayerClientId(playerId: string, roomPin: string, newClientId: string) {
         const key = `game:room:${roomPin}:players`;
 
         const playerData = await this.redis.hget(key, playerId);
-        
-        if(playerData){
+
+        if (playerData) {
             const player = JSON.parse(playerData);
             player.socket = newClientId;
             await this.redis.hset(key, playerId, JSON.stringify(player));
@@ -176,9 +178,15 @@ export class PlayerRecordRedisService {
         return false;
     }
 
-    async playerExist(playerId: string, roomPin: string){
+    async playerExist(playerId: string, roomPin: string) {
         const key = `game:room:${roomPin}:players`;
 
         return await this.redis.hexists(key, playerId);
+    }
+
+    async getPlayerData(playerId: string, roomPin: string) {
+        const key = `game:room:${roomPin}:players`;
+        const raw = await this.redis.hget(key, playerId);
+        return raw ? JSON.parse(raw) : null;
     }
 }

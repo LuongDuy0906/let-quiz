@@ -102,9 +102,16 @@ export class GameSessionGateway implements OnGatewayDisconnect {
 
             await this.playerRecordRedisService.markPlayerDisconnect(playerId, roomPin, periodSeconds);
 
+            let playerName = playerId;
+            const playerData = await this.playerRecordRedisService.getPlayerData(playerId, roomPin);
+            if (playerData) {
+                playerName = playerData.name;
+            }
+
             this.server.to(roomPin).emit('playerDisconnect', {
-                message: `Người chơi ${playerId} mất kết nối`,
+                message: `Người chơi ${playerName} mất kết nối`,
                 playerId,
+                playerName,
                 periodSeconds
             });
 
@@ -123,6 +130,8 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             if (!roomData) {
                 throw new NotFoundException('Phòng chơi không tồn tại');
             }
+
+            const roomInfo = JSON.parse(roomData);
 
             const disconnectData = await this.playerRecordRedisService.getDisconnectData(roomPin, playerId);
 
@@ -145,9 +154,17 @@ export class GameSessionGateway implements OnGatewayDisconnect {
 
             await this.playerRecordRedisService.removeDisconnectPlayer(roomPin, playerId);
 
+            let mappedStatus = 'WAITING';
+            if (roomInfo.status === 'STARTING') {
+                mappedStatus = 'PLAYING';
+            } else if (roomInfo.status === 'ENDED') {
+                mappedStatus = 'FINISHED';
+            }
+
             client.emit('reconnectSuccess', {
                 message: 'Kết nối lại thành công! Dữ liệu của bạn đã được giữ lại.',
-                playerId
+                playerId,
+                roomStatus: mappedStatus
             });
 
             this.server.to(roomPin).emit('playerReconnected', {
@@ -158,8 +175,6 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             const playerList = await this.playerRecordRedisService.playerList(roomPin);
             this.server.to(roomPin).emit('playerListUpdate', playerList);
 
-            const roomInfo = JSON.parse(roomData)
-
             if (roomInfo.status !== 'LOBBY') {
                 const rawQuestion = await this.gameSessionRedisService.getQuestion(roomPin);
 
@@ -168,7 +183,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                     const currentQuestion = questions[roomInfo.questionIndex];
 
                     if (currentQuestion) {
-                        let optionsData = currentQuestion.option.map((opt: any) => ({
+                        let optionsData = currentQuestion.options.map((opt: any) => ({
                             id: opt._id,
                             text: opt.content
                         }));
@@ -180,13 +195,18 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                         const currentQuestionInfo = {
                             questionId: currentQuestion._id,
                             title: currentQuestion.content,
+                            questionType: currentQuestion.questionType,
+                            image: currentQuestion.image,
                             options: optionsData,
-                            duration: Number(currentQuestion.duration) || 30,
+                            duration: Number(currentQuestion.timeLimit) || 30,
                             currentQuestionIndex: roomInfo.questionIndex + 1,
                             totalQuestions: questions.length
                         }
 
-                        client.emit('questionRecived', currentQuestionInfo);
+                        // Trì hoãn 500ms để đảm bảo React Component phía Client kịp mount và đăng ký lắng nghe sự kiện
+                        setTimeout(() => {
+                            client.emit('questionRecived', currentQuestionInfo);
+                        }, 500);
                     }
                 }
             }
@@ -255,12 +275,8 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             const settings = roomInfo.gameSettings;
 
             if (currentIndex >= questions.length) {
-                if (settings?.showLeaderboard) {
-                    const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 10);
-                    this.server.to(roomPin).emit('finalLeaderboard', finalLeaderboard);
-                }
-
-                await this.gameSessionRedisService.updateGameSessionStatus(roomPin);
+                const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 10);
+                this.server.to(roomPin).emit('finalLeaderboard', finalLeaderboard);
 
                 return;
             }
@@ -286,13 +302,15 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                         optionsData = optionsData.sort(() => Math.random() - 0.5);
                     }
 
-                    const questionDuration = Number(currentQuestion.duration) || 30;
+                    const questionDuration = Number(currentQuestion.timeLimit) || 30;
 
                     await this.gameSessionRedisService.setQuestionStartTime(roomPin, currentQuestion._id, Date.now());
 
                     const safeQuestionForPlayer = {
                         questionId: currentQuestion._id,
                         title: currentQuestion.content,
+                        questionType: currentQuestion.questionType,
+                        image: currentQuestion.image,
                         options: optionsData,
                         duration: questionDuration,
                         currentQuestionIndex: currentIndex + 1,
@@ -359,14 +377,28 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 const roomInfo = JSON.parse(rawRoomData);
                 const currentQuestion = questions[roomInfo.questionIndex];
 
-                isCorrect = currentQuestion.options.find((opt: any) => opt._id === data.answerId)?.isCorrect;
+                if (currentQuestion.questionType === 'multiple') {
+                    const correctOptionIds = currentQuestion.options
+                        .filter((opt: any) => opt.isCorrect)
+                        .map((opt: any) => String(opt._id))
+                        .sort();
+
+                    const submittedOptionIds = data.answerId
+                        ? data.answerId.split(',').map((id: string) => id.trim()).sort()
+                        : [];
+
+                    isCorrect = correctOptionIds.length === submittedOptionIds.length &&
+                        correctOptionIds.every((val, index) => val === submittedOptionIds[index]);
+                } else {
+                    isCorrect = currentQuestion.options.find((opt: any) => opt._id === data.answerId)?.isCorrect || false;
+                }
 
                 if (isCorrect) {
                     const startTime = await this.gameSessionRedisService.getQuestionStartTime(roomPin, data.questionId);
                     const submitTime = Date.now();
 
                     const timeElapsedMs = startTime ? (submitTime - startTime) : 0;
-                    const durationMs = (Number(currentQuestion.duration) || 30) * 1000;
+                    const durationMs = (Number(currentQuestion.timeLimit) || 30) * 1000;
 
                     const safeTimeElapsed = Math.max(0, Math.min(timeElapsedMs, durationMs));
 
@@ -419,16 +451,39 @@ export class GameSessionGateway implements OnGatewayDisconnect {
     private async handleQuestionEnd(roomPin: string, settings: any) {
         this.server.to(roomPin).emit('timeout', { message: "Câu hỏi đã kết thúc" });
 
-        if (settings?.showLeaderboard) {
-            const leaderBoard = await this.playerRecordRedisService.getLeaderboard(roomPin, 5);
-            this.server.to(roomPin).emit('liveLeaderboard', leaderBoard);
-        } else {
-            this.server.to(roomPin).emit('questionFinishedWithoutLeaderboard');
+        try {
+            const rawQuestion = await this.gameSessionRedisService.getQuestion(roomPin);
+            const rawRoomData = await this.gameSessionRedisService.getGameSession(roomPin);
+
+            if (rawQuestion && rawRoomData) {
+                const questions = JSON.parse(rawQuestion);
+                const roomInfo = JSON.parse(rawRoomData);
+                const currentQuestion = questions[roomInfo.questionIndex];
+
+                if (currentQuestion) {
+                    const correctOptionIds = currentQuestion.options
+                        .filter((opt: any) => opt.isCorrect)
+                        .map((opt: any) => String(opt._id));
+
+                    this.server.to(roomPin).emit('revealAnswer', { correctOptionIds });
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy đáp án đúng để hiển thị:', error);
         }
 
         setTimeout(async () => {
+            if (settings?.showLeaderboard) {
+                const leaderBoard = await this.playerRecordRedisService.getLeaderboard(roomPin, 5);
+                this.server.to(roomPin).emit('liveLeaderboard', leaderBoard);
+            } else {
+                this.server.to(roomPin).emit('questionFinishedWithoutLeaderboard');
+            }
+        }, 3000);
+
+        setTimeout(async () => {
             await this.internalNextQuestion(roomPin);
-        }, 5000);
+        }, 7000);
     }
 
     @SubscribeMessage('gameEnded')
@@ -442,15 +497,23 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             if (this.activeTimers.has(roomPin)) {
                 clearInterval(this.activeTimers.get(roomPin));
                 this.activeTimers.delete(roomPin);
-            };
+            }
 
-            this.server.to(roomPin).emit('gameFinished', {
-                message: 'Host đã kết thúc phiên chơi',
-            });
-
+            // 1. Lưu kết quả vào MongoDB ngay lập tức để tránh mất dữ liệu
             await this.gameSessionService.saveSessionResultsToMongo(roomPin);
 
-            this.server.in(roomPin).socketsLeave(roomPin);
+            // 2. Phát vinh danh cuối cùng trước khi đóng phòng
+            const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 10);
+            this.server.to(roomPin).emit('finalLeaderboard', finalLeaderboard);
+
+            // 3. Cho người chơi xem bục vinh danh 10 giây trước khi đóng hoàn toàn
+            setTimeout(async () => {
+                this.server.to(roomPin).emit('gameFinished', {
+                    message: 'Host đã kết thúc phiên chơi',
+                });
+
+                this.server.in(roomPin).socketsLeave(roomPin);
+            }, 10000);
 
         } catch (error) {
             console.error('Lỗi khi xử lý chủ động kết thúc game:', error);

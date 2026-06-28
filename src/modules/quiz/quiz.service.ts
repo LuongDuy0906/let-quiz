@@ -135,7 +135,8 @@ export class QuizService {
       image: "",
       tag: data.tags,
       isAiGenerated: true,
-      questions: formattedQuestions
+      questions: formattedQuestions,
+      status: 'public'
     };
   }
 }

@@ -101,17 +101,26 @@ export class GameSessionRedisService{
     }
 
     async cleanUpFullRoom(roomPin: string) {
-        const roomKey = `game:room:${roomPin}:info`;
-        const playerKey = `game:room:${roomPin}:players`;
-        const questionKey = `game:room:${roomPin}:question`;
-        const leaderboardKey = `game:room:${roomPin}:leaderboard`;
+        const exactKeys = [
+            `game:room:${roomPin}:info`,
+            `game:room:${roomPin}:players`,
+            `game:room:${roomPin}:question`,
+            `game:room:${roomPin}:leaderboard`,
+        ];
+
+        const answerKeys = await this.redis.keys(`game:room:${roomPin}:answer:*`);
+
+        const startTimeKeys = await this.redis.keys(`game:room:${roomPin}:question:*:startTime`);
+
+        const keysToDelete = [
+            ...exactKeys,
+            ...answerKeys,
+            ...startTimeKeys
+        ];
         
-        await Promise.all([
-            this.redis.del(roomKey),
-            this.redis.del(playerKey),
-            this.redis.del(questionKey),
-            this.redis.del(leaderboardKey)
-        ])
+        if (keysToDelete.length > 0) {
+            await this.redis.del(...keysToDelete); 
+        }
 
         return;
     }
