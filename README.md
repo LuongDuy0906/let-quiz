@@ -1,247 +1,169 @@
-# 🎯 LetQuiz - A Quiz Game Backend
+# 🎯 LetQuiz - Backend Hệ Thống Trò Chơi Trắc Nghiệm Tương Tác
 
-A NestJS backend for an interactive quiz game platform with real-time multiplayer game sessions, user authentication, and comprehensive quiz management.
+LetQuiz là một hệ thống backend được xây dựng trên nền tảng **NestJS**, cung cấp API và kết nối WebSocket thời gian thực cho ứng dụng trò chơi trắc nghiệm nhiều người chơi tương tác (tương tự Kahoot). Dự án tích hợp các công nghệ hiện đại như MongoDB để lưu trữ dữ liệu, Redis để quản lý hàng đợi và cache phiên chơi, cùng Socket.io cho truyền thông thời gian thực.
 
-## 🚀 Features
+---
 
-- **Authentication & Authorization**
-  - JWT-based authentication
-  - Google OAuth 2.0 integration
-  - Role-based access control (RBAC)
-  - Refresh token strategy
+## Các Tính Năng Chính
 
-- **Quiz Management**
-  - Create, update, delete quizzes
-  - Support for multiple question types
-  - Tag-based quiz categorization
-  - Quiz status tracking (draft, published, archived)
+### 1. Xác Thực & Bảo Mật (Authentication & Security)
 
-- **Real-time Game Sessions**
-  - WebSocket-based multiplayer game sessions
-  - Real-time player tracking
-  - Game metrics and statistics
-  - Configurable game settings
+- Xác thực người dùng bằng cơ chế **JWT (Access Token & Refresh Token)**.
+- Đăng nhập bên thứ ba bằng **Google OAuth 2.0**.
+- Phân quyền người dùng (Role-based Access Control - RBAC).
+- **WebSocket Handshake JWT Security**: Tự động giải mã và xác thực Token JWT của người dùng ngay từ lúc thiết lập kết nối Socket, đảm bảo an toàn tuyệt đối cho vai trò Host và chống giả mạo ID người chơi.
 
-- **Player Records & Leaderboard**
-  - Track player performance
-  - Record game history
-  - Calculate player statistics
+### 2. Quản Lý Bộ Câu Hỏi (Quiz Management)
 
-- **File Management**
-  - Cloud-based file upload via Cloudinary
-  - Image optimization and delivery
+- Tạo, cập nhật, xóa và quản lý danh sách bộ câu hỏi (Quiz).
+- Hỗ trợ nhiều loại câu hỏi trắc nghiệm.
+- Gắn thẻ phân loại (Tags) bằng Tiếng Việt.
+- Tải lên hình ảnh câu hỏi qua dịch vụ đám mây **Cloudinary**.
 
-- **Email Notifications**
-  - Password reset emails
-  - Game notifications
-  - Nodemailer integration
+### 3. Phiên Chơi Thời Gian Thực (Real-time Game Sessions)
 
-- **Caching & Performance**
-  - Redis-based caching
-  - Session management
-  - Data optimization
+- Kết nối Socket.io thời gian thực giữa Host (Giáo viên) và các Player (Học sinh).
+- **Tính điểm giảm dần tuyến tính**: Điểm số tối đa (1000) giảm dần theo thời gian phản hồi câu hỏi (giảm tuyến tính về tối thiểu 500 điểm khi hết giờ) theo công thức:
+  $$\text{multiplier} = 1 - \left(\frac{\text{timeElapsed}}{\text{duration}} \times 0.5\right)$$
+  $$\text{score} = \text{Math.round}(1000 \times \text{multiplier})$$
+- Tự động đồng bộ hóa danh sách người chơi, đếm ngược thời gian, và cập nhật thống kê số lượt nộp bài.
 
-## 📋 Prerequisites
+### 4. Quản Lý Trạng Thế Kết Nối (Reconnection Management)
 
-- Node.js >= 18.x
-- npm or yarn
-- MongoDB (Atlas or local)
-- Redis (Upstash or local)
-- Cloudinary account (optional)
-- Google OAuth credentials (optional)
+- Người chơi thường (Player) được phép ngắt kết nối tạm thời và tự động kết nối lại (Reconnect) trong vòng 30 giây mà không bị mất dữ liệu điểm số hoặc bị đá khỏi phòng.
+- Host (Giáo viên) được bảo vệ bằng cơ chế đối chiếu động `hostId` khi tái kết nối để khôi phục quyền điều hành phòng.
 
-## 🛠️ Setup Instructions
+---
 
-### 1. Clone & Install Dependencies
+## Yêu Cầu Hệ Thống
+
+- **Node.js** >= 18.x
+- **npm** hoặc **yarn**
+- **MongoDB** (Local hoặc MongoDB Atlas)
+- **Redis** (Local hoặc Upstash Redis)
+
+---
+
+## Hướng Dẫn Cài Đặt
+
+### 1. Tải Mã Nguồn & Cài Đặt Dependencies
 
 ```bash
-git clone <repository-url>
+# Clone repository
+git clone https://github.com/LuongDuy0906/let-quiz.git
+
+# Di chuyển vào thư mục dự án
 cd let-quiz
+
+# Cài đặt thư viện
 npm install
 ```
 
-### 2. Environment Configuration
+### 2. Cấu Hình Biến Môi Trường (.env)
 
-Copy `.env.example` to `.env` and fill in your values:
+Tạo file `.env` từ mẫu `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
-Required environment variables:
-- `PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment (development/production/test)
-- `MONGODB_URI` - MongoDB connection string
-- `REDIS_URL` - Redis connection URL
-- `JWT_SECRET` - JWT signing secret
-- `JWT_EXPIRATION_TIME` - JWT expiration (e.g., 15m)
-- `REFRESH_TOKEN_SECRET` - Refresh token secret
-- `REFRESH_TOKEN_EXPIRATION_TIME` - Refresh token expiration (e.g., 7d)
+Các biến môi trường cần thiết:
 
-Optional:
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - Google OAuth
-- `CLOUDINARY_*` - File upload credentials
-- `MAIL_*` - Email service credentials
+```env
+PORT=4000
+NODE_ENV=development
 
-### 3. Run the Application
+# Database & Cache
+MONGODB_URI=mongodb://localhost:27017/let-quiz
+REDIS_URL=redis://localhost:6379
 
-**Development:**
+# JWT Security
+SECRET_KEY=your_jwt_access_secret_key
+EXPIRED_IN=15m
+REFRESH_TOKEN_SECRET=your_jwt_refresh_secret_key
+REFRESH_TOKEN_EXPIRED_IN=7d
+
+# Cloudinary (Tải ảnh câu hỏi)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Google OAuth (Tùy chọn)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:4000/api/auth/google/callback
+```
+
+### 3. Chạy Ứng Dụng
+
+**Chế độ phát triển (Development):**
+
 ```bash
 npm run start:dev
 ```
 
-**Production:**
+**Biên dịch & Chạy production:**
+
 ```bash
 npm run build
 npm run start:prod
 ```
 
-**Debug Mode:**
-```bash
-npm run start:debug
-```
+---
 
-## 🧪 Testing
-
-```bash
-# Unit tests
-npm run test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:cov
-
-# E2E tests
-npm run test:e2e
-```
-
-## 📚 API Documentation
-
-Swagger API documentation is available at:
-```
-http://localhost:3000/api/document
-```
-
-## 🏗️ Project Structure
+## Cấu Trúc Thư Mục Dự Án
 
 ```
 src/
-├── config/                 # Application configuration
-│   ├── validation.ts      # Environment validation
-│   ├── jwt.config.ts
-│   ├── refresh-token.config.ts
-│   └── google-oauth.config.ts
-├── common/                # Shared utilities & infrastructure
-│   ├── decorators/        # Custom decorators (@Roles, etc.)
-│   ├── filters/           # Exception filters
-│   ├── guards/            # Auth guards (JWT, Roles, etc.)
-│   ├── interceptors/      # HTTP interceptors
-│   ├── pipes/             # Custom pipes
-│   ├── exceptions/        # Custom exception classes
-│   ├── constants.ts       # App-wide constants
-│   └── utils/             # Utility functions
-├── enums/                 # Enums (UserRole, QuizStatus, etc.)
-├── modules/               # Feature modules
-│   ├── auth/              # Authentication module
-│   │   ├── services/
-│   │   ├── strategies/
-│   │   ├── guards/
-│   │   ├── dto/
-│   │   └── auth.controller.ts
-│   ├── user/              # User management
-│   ├── quiz/              # Quiz management
-│   ├── game-session/      # Real-time game sessions (WebSocket)
-│   ├── player-record/     # Player statistics & history
-│   ├── mail/              # Email service
-│   └── cloudinary/        # File upload service
-├── app.module.ts          # Root module
-└── main.ts                # Bootstrap file
+├── config/                 # Các file cấu hình hệ thống (JWT, MongoDB, Redis, Google OAuth)
+├── common/                # Các thành phần dùng chung toàn hệ thống
+│   ├── decorators/        # Custom decorators (@Roles, @ReqUser, v.v.)
+│   ├── filters/           # Exception filters xử lý lỗi tập trung
+│   ├── guards/            # Guards xác thực phân quyền
+│   └── interceptors/      # Interceptors xử lý dữ liệu HTTP
+├── modules/               # Các module chức năng chính
+│   ├── auth/              # Xác thực JWT, Google Login, đăng ký/đăng nhập
+│   ├── user/              # Quản lý tài khoản & thông tin cá nhân
+│   ├── quiz/              # Quản lý bộ câu hỏi & bộ đề trắc nghiệm
+│   ├── game-session/      # Gateway Socket.io và logic điều phối phòng chơi (Real-time)
+│   ├── player-record/     # Thống kê điểm số, lịch sử đấu và BXH (Leaderboard)
+│   ├── cloudinary/        # Dịch vụ tải hình ảnh lên đám mây
+│   └── mail/              # Dịch vụ gửi email (Nodemailer)
+├── app.module.ts          # Module gốc ứng dụng
+└── main.ts                # File khởi tạo bootstrap dự án NestJS
 ```
-
-## 🔐 Authentication Flow
-
-### JWT Authentication
-```
-1. User logs in with email/password
-2. Server validates credentials
-3. Returns access token + refresh token
-4. Client stores tokens locally
-5. Use access token in Authorization header for protected routes
-```
-
-### Google OAuth
-```
-1. User clicks "Login with Google"
-2. Redirected to Google OAuth consent screen
-3. Google redirects back with authorization code
-4. Server exchanges code for user info
-5. Auto-creates/updates user account
-6. Returns JWT tokens
-```
-
-## 🎮 Real-time Game Sessions
-
-WebSocket connection for multiplayer game sessions:
-```
-ws://localhost:3000/game-session
-```
-
-Events:
-- `createSession` - Create new game session
-- `joinSession` - Join existing session
-- `submitAnswer` - Submit answer during game
-- `gameEnded` - Broadcast when game ends
-
-## 📊 Database Schema Overview
-
-### Collections:
-- **users** - User accounts & profiles
-- **quizzes** - Quiz data
-- **game-sessions** - Active/completed game sessions
-- **player-records** - Player performance records
-
-## 🛡️ Security Features
-
-- CORS enabled
-- Input validation & sanitization
-- JWT token-based authentication
-- Role-based access control
-- Exception filtering & error handling
-- Environment validation on startup
-
-## 📝 Code Style
-
-- ESLint configuration
-- Prettier code formatting
-- TypeScript strict mode
-- NestJS best practices
-
-Commands:
-```bash
-# Lint
-npm run lint
-
-# Format code
-npm run format
-```
-
-## 🤝 Contributing
-
-1. Create feature branch (`git checkout -b feature/amazing-feature`)
-2. Commit changes (`git commit -m 'Add amazing feature'`)
-3. Push to branch (`git push origin feature/amazing-feature`)
-4. Open Pull Request
-
-## 📄 License
-
-UNLICENSED
-
-## 📧 Support
-
-For issues or questions, please open an issue in the repository.
 
 ---
 
-**Built with ❤️ using NestJS**
+## Sự Kiện WebSocket Gateway (`/game-session`)
+
+Kết nối WebSocket chính thức sử dụng cổng chạy Server (ví dụ: `ws://localhost:4000`).
+
+| Sự Kiện Gửi Lên (Client -> Server) | Với Vai Trò                          | Payload                           |
+| :--------------------------------- | :----------------------------------- | :-------------------------------- |
+| `joinRoom`                         | Tham gia vào phòng chơi              | `{ roomPin, name, avatar }`       |
+| `leaveRoom`                        | Chủ động rời khỏi phòng chơi         | Không có                          |
+| `reconnectToRoom`                  | Yêu cầu kết nối lại sau khi rớt mạng | `{ roomPin, playerId }`           |
+| `submitAnswer`                     | Nộp đáp án lựa chọn                  | `{ questionId, optionId, score }` |
+| `gameEnded`                        | Yêu cầu kết thúc trò chơi (chỉ Host) | Không có                          |
+
+| Sự Kiện Nhận Về (Server -> Client) | Với Vai Trò                                       | Payload                                            |
+| :--------------------------------- | :------------------------------------------------ | :------------------------------------------------- |
+| `playerListUpdate`                 | Cập nhật danh sách người chơi trong phòng chờ     | `[ { _id, name, avatar, isHost } ]`                |
+| `playerDisconnect`                 | Thông báo người chơi bị mất kết nối mạng tạm thời | `{ message, playerId, playerName, periodSeconds }` |
+| `playerReconnected`                | Thông báo người chơi đã kết nối lại thành công    | `{ message, playerId }`                            |
+| `roomClosed`                       | Thông báo phòng chơi đã bị giải tán bởi Host      | `{ message }`                                      |
+| `gameStarted`                      | Trận đấu được kích hoạt bắt đầu                   | `{ gameSession, message }`                         |
+| `nextQuestion`                     | Gửi câu hỏi tiếp theo kèm thời gian đếm ngược     | `{ currentQuestionIndex, text, duration, ... }`    |
+| `revealAnswer`                     | Công bố các đáp án đúng sau khi hết giờ           | `{ correctOptionIds }`                             |
+| `liveLeaderboard`                  | Bảng xếp hạng cập nhật điểm số trực tiếp          | `[ { member, score } ]`                            |
+
+---
+
+## Tài Liệu API (Swagger)
+
+Khi ứng dụng đang chạy ở chế độ phát triển, bạn có thể truy cập tài liệu Swagger UI chi tiết tại đường dẫn:
+
+```
+http://localhost:4000/api/document
+```

@@ -31,5 +31,6 @@ import { RedisTokenService } from './services/token.redis.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TokenService, RefreshJwtStrategy, GoogleStrategy, RedisTokenService],
+  exports: [JwtModule]
 })
 export class AuthModule {}

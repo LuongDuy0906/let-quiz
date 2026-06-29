@@ -2,7 +2,7 @@ import { Prop, Schema } from "@nestjs/mongoose";
 import { QuestionType } from "src/common/enum/questionType";
 import { Option } from "./option.entity";
 
-@Schema()
+@Schema({ id: false })
 export class Question{
     @Prop({required: true})
     content: string;

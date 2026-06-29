@@ -101,17 +101,20 @@ export class QuizService {
   }
 
   async getQuestionWithQuizId(id: string, userId: string) {
-    const quizData = await this.quizModel.findById(id);
+    const quizData = await this.quizModel
+      .findById(id)
+      .select('-questions._id -questions.options._id') 
 
     if(!quizData) {
       throw new NotFoundException('Bộ đề không tồn tại');
     }
 
     const isUserQuiz: boolean = String(quizData.authorId) === userId;
-    
+      
     if(isUserQuiz === false){
       throw new ConflictException('Bạn không có quyền truy cập bộ đề');
     }
+    console.log(quizData);
 
     return quizData;
   }

@@ -1,6 +1,6 @@
 import { Prop, Schema } from "@nestjs/mongoose";
 
-@Schema()
+@Schema({ id: false })
 export class Option{
     @Prop({required: true})
     content: string;

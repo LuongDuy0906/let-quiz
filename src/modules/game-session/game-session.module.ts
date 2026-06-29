@@ -8,6 +8,7 @@ import { GameSessionGateway } from './game-session.gateway';
 import { PlayerRecordModule } from '../player-record/player-record.module';
 import { QuizModule } from '../quiz/quiz.module';
 import { PlayerRecord, PlayerRecordSchema } from '../player-record/entities/player-record.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { PlayerRecord, PlayerRecordSchema } from '../player-record/entities/play
       }
     ]),
     PlayerRecordModule,
-    QuizModule
+    QuizModule,
+    AuthModule
   ],
   controllers: [GameSessionController],
   providers: [GameSessionService, GameSessionRedisService, GameSessionGateway],

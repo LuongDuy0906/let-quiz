@@ -47,7 +47,7 @@ export class GameSessionController {
   }
 
   @Post('start')
-  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   async startGameSession(@Body() data: StartGameDTO){
     await this.gameSessionGatewway.triggerStartGame(data);
   }

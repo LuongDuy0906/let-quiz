@@ -9,7 +9,4 @@ export class CreatePlayerRecordDto {
 
     @IsNotEmpty({message: "Mã PIN không được để trống"})
     roomPin: string;
-
-    @IsOptional()
-    userId: string;
 }

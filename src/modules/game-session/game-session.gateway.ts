@@ -1,4 +1,4 @@
-import { ConnectedSocket, MessageBody, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { CreatePlayerRecordDto } from "../player-record/dto/create-player-record.dto";
 import { PlayerRecordRedisService } from "../player-record/services/player-record.redis.service";
 import { GameSessionRedisService } from "./services/game-session.redis.service";
@@ -7,13 +7,14 @@ import { GameSessionService } from "./services/game-session.service";
 import { NotFoundException } from "@nestjs/common";
 import { StartGameDTO } from "./dto/start-game-info.dto";
 import { PlayerAnswerDto } from "../player-record/dto/save-player-answer.dto";
+import { JwtService } from "@nestjs/jwt";
 
 @WebSocketGateway({
     cors: {
         origin: '*',
     },
 })
-export class GameSessionGateway implements OnGatewayDisconnect {
+export class GameSessionGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server!: Server;
 
@@ -23,8 +24,24 @@ export class GameSessionGateway implements OnGatewayDisconnect {
     constructor(
         private readonly playerRecordRedisService: PlayerRecordRedisService,
         private readonly gameSessionRedisService: GameSessionRedisService,
-        private readonly gameSessionService: GameSessionService
+        private readonly gameSessionService: GameSessionService,
+        private readonly jwtService: JwtService
     ) { }
+
+    async handleConnection(@ConnectedSocket() client: Socket) {
+        try {
+            const token = client.handshake.auth?.token;
+            if (token && token !== 'null' && token !== 'undefined') {
+                const payload = await this.jwtService.verifyAsync(token);
+                if (payload && payload.sub) {
+                    client.data.userId = payload.sub;
+                    console.log(`Client connected successfully. Authenticated userId: ${payload.sub}`);
+                }
+            }
+        } catch (err: any) {
+            console.warn(`Socket connection auth error: ${err.message}`);
+        }
+    }
 
     @SubscribeMessage('joinRoom')
     async handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() data: CreatePlayerRecordDto) {
@@ -42,7 +59,9 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 return;
             }
 
-            const { isHost, playerId } = await this.playerRecordRedisService.addNewPlayer(data, client.id, roomInfo.hostId);
+            const { isHost, playerId } = await this.playerRecordRedisService.addNewPlayer({
+                ...data,
+            }, client.data.userId, client.id, roomInfo.hostId);
             client.join(data.roomPin);
             client.data.roomPin = data.roomPin;
             client.data.isHost = isHost;
@@ -73,16 +92,29 @@ export class GameSessionGateway implements OnGatewayDisconnect {
             await this.gameSessionRedisService.cleanUpFullRoom(roomPin);
             this.server.in(roomPin).socketsLeave(roomPin);
             this.activeTimers.delete(roomPin);
+            client.data.roomPin = undefined;
+            client.data.playerId = undefined;
+            client.data.isHost = undefined;
             return;
         }
 
-        console.log(`Client ${playerId} is leaving room ${roomPin}`);
+        let playerName = playerId;
+        const playerData = await this.playerRecordRedisService.getPlayerData(playerId, roomPin);
+        if (playerData) {
+            playerName = playerData.name;
+        }
+
+        this.server.to(roomPin).emit('playerLeaved', { message: `Người chơi ${playerName} đã rời khỏi phòng chơi` });
+
         await this.playerRecordRedisService.leaveRoom(playerId, roomPin);
-        this.server.to(roomPin).emit('playerLeaved', { message: `Người chơi ${playerId} đã rời khỏi phòng chơi` });
 
         const playersList = await this.playerRecordRedisService.playerList(roomPin);
         this.server.to(roomPin).emit('playerListUpdate', playersList);
         client.leave(roomPin);
+
+        client.data.roomPin = undefined;
+        client.data.playerId = undefined;
+        client.data.isHost = undefined;
     }
 
     async handleDisconnect(client: Socket) {
@@ -98,15 +130,16 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 return;
             }
 
+            const playerData = await this.playerRecordRedisService.getPlayerData(playerId, roomPin);
+            if (!playerData) {
+                return;
+            }
+
             const periodSeconds: number = 30;
 
             await this.playerRecordRedisService.markPlayerDisconnect(playerId, roomPin, periodSeconds);
 
-            let playerName = playerId;
-            const playerData = await this.playerRecordRedisService.getPlayerData(playerId, roomPin);
-            if (playerData) {
-                playerName = playerData.name;
-            }
+            const playerName = playerData.name;
 
             this.server.to(roomPin).emit('playerDisconnect', {
                 message: `Người chơi ${playerName} mất kết nối`,
@@ -150,7 +183,6 @@ export class GameSessionGateway implements OnGatewayDisconnect {
 
             client.data.roomPin = roomPin;
             client.data.playerId = playerId;
-            client.data.isHost = false;
 
             await this.playerRecordRedisService.removeDisconnectPlayer(roomPin, playerId);
 
@@ -167,8 +199,14 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 roomStatus: mappedStatus
             });
 
+            let playerName = playerId;
+            const playerData = await this.playerRecordRedisService.getPlayerData(playerId, roomPin);
+            if (playerData) {
+                playerName = playerData.name;
+            }
+
             this.server.to(roomPin).emit('playerReconnected', {
-                message: `Người chơi ${playerId} đã kết nối lại`,
+                message: `Người chơi ${playerName} đã kết nối lại`,
                 playerId
             });
 
@@ -198,12 +236,11 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                             questionType: currentQuestion.questionType,
                             image: currentQuestion.image,
                             options: optionsData,
-                            duration: Number(currentQuestion.timeLimit) || 30,
+                            duration: Number(currentQuestion.duration) || 30,
                             currentQuestionIndex: roomInfo.questionIndex + 1,
                             totalQuestions: questions.length
                         }
 
-                        // Trì hoãn 500ms để đảm bảo React Component phía Client kịp mount và đăng ký lắng nghe sự kiện
                         setTimeout(() => {
                             client.emit('questionRecived', currentQuestionInfo);
                         }, 500);
@@ -302,7 +339,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                         optionsData = optionsData.sort(() => Math.random() - 0.5);
                     }
 
-                    const questionDuration = Number(currentQuestion.timeLimit) || 30;
+                    const questionDuration = Number(currentQuestion.duration) || 30;
 
                     await this.gameSessionRedisService.setQuestionStartTime(roomPin, currentQuestion._id, Date.now());
 
@@ -398,7 +435,7 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                     const submitTime = Date.now();
 
                     const timeElapsedMs = startTime ? (submitTime - startTime) : 0;
-                    const durationMs = (Number(currentQuestion.timeLimit) || 30) * 1000;
+                    const durationMs = (Number(currentQuestion.duration) || 30) * 1000;
 
                     const safeTimeElapsed = Math.max(0, Math.min(timeElapsedMs, durationMs));
 
@@ -499,14 +536,11 @@ export class GameSessionGateway implements OnGatewayDisconnect {
                 this.activeTimers.delete(roomPin);
             }
 
-            // 1. Lưu kết quả vào MongoDB ngay lập tức để tránh mất dữ liệu
             await this.gameSessionService.saveSessionResultsToMongo(roomPin);
 
-            // 2. Phát vinh danh cuối cùng trước khi đóng phòng
             const finalLeaderboard = await this.playerRecordRedisService.getLeaderboard(roomPin, 10);
             this.server.to(roomPin).emit('finalLeaderboard', finalLeaderboard);
 
-            // 3. Cho người chơi xem bục vinh danh 10 giây trước khi đóng hoàn toàn
             setTimeout(async () => {
                 this.server.to(roomPin).emit('gameFinished', {
                     message: 'Host đã kết thúc phiên chơi',
